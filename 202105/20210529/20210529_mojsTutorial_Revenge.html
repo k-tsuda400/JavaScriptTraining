@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>HTML5 MojsTest</title>
+    <style>
+    </style>
+</head>
+<!--こっからHTMLコード-->
+<div id="motion20210530"></div>
+<script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+<script>
+  const bouncyCircle = new mojs.Shape({
+  parent:       '#motion20210530',
+  shape:        'circle',
+  fill:         {'#A660A0': '#FC46AD'},
+  radius:       {20: 80},
+  duration:     1400,
+  isYoyo:       true,
+  isShowStart:  true,
+  easing:       'circ.inout',
+  // easingの設定一覧はこちら：https://mojs.github.io/api/easing/base-functions.html
+  repeat:       1,
+});
+
+bouncyCircle.play()
+</script>
+</body>
+</html>
