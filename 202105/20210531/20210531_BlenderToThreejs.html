@@ -31,7 +31,8 @@ const scene = new THREE.Scene(); //3Dを表現する空間
 
 const loader = new THREE.GLTFLoader();
 
-loader.load( '20210531_glass.glb', function ( gltf ) {
+// loader.load( '20210531_glass.glb', function ( gltf ) {
+loader.load( 'https://github.com/k-tsuda400/JavaScriptTraining/blob/master/202105/20210531/20210531_glass.glb?raw=true', function ( gltf ) {
 
 	scene.add( gltf.scene );
 
