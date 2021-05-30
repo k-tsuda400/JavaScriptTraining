@@ -27,7 +27,8 @@
 		}
     </style>
     <section>
-      <p>click</p>
+      <p>Z: 埋立</p>
+      <p>矢印キー: 移動</p>
       <canvas id="e_click" width="250" height="250"></canvas>
     </section>
 <script>
@@ -265,10 +266,10 @@ function draw() {
   ctx.beginPath();
   ctx.fillStyle = "rgb(255, 20, 20)";
   ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 8, 0, Math.PI * 2, 0);
-  if(cirDirection === 0){ ctx.arc(cirX * (w / wakuWidth) + 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
-  else if(cirDirection === 1){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + 10 + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
-  else if(cirDirection === 2){ ctx.arc(cirX * (w / wakuWidth) - 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
-  else if(cirDirection === 3){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) - 10 + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
+  if(cirDirection === 0){ ctx.arc(cirX * (w / wakuWidth) + 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 2, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 1){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + 10 + (h / wakuHeight / 2), 2, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 2){ ctx.arc(cirX * (w / wakuWidth) - 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 2, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 3){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) - 10 + (h / wakuHeight / 2), 2, 0, Math.PI * 2, 0); }
   ctx.fill();
 
   // 次に、プレイヤーの枠線を表示
