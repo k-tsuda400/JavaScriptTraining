@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>HTML5 MojsTest</title>
+    <style>
+      body {
+  background-color: black
+}
+    </style>
+</head>
+<body>
+<!--こっからHTMLコード-->
+<script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+<script>
+// 参考サイト：
+// https://www.youtube.com/watch?v=oDpxt_sle68
+
+// @todo: body を経由せずに背景を黒色にするにはどうすれば？
+const burst = new mojs.Burst({
+  radius: {0:100},
+  count: 30,
+  children: {
+    shape: 'equal',
+    stroke: '#226699',
+    strokeWidth: {1.75:0},
+    radius: {50:0},
+    duration: 1800,
+    delay: -250,
+    easing: 'quint.inout',
+  }
+})
+
+const burst2 = new mojs.Burst({
+  radius: { 0: 100 },
+  count: 20,
+  children: {
+    shape: 'zigzag',
+    points: 7,
+    stroke: '#44FFFF',
+    fill: 'none',
+    strokeWidth: {1.95:0},
+    angle: {'-360':0},
+    radius: {50:0},
+    duration: 1000,
+    easing: 'quint.inout',
+    opacity: {1:0}
+  }
+})
+
+const circleObj = {
+  fill: 'none',
+  stroke: 'white',
+  easing: 'quint.inout',
+  opacity: {1:0}
+}
+
+const circle = new mojs.Shape({
+  // '...'(ドット3つ)はJavaScript特有の表記。
+  // {}を展開してくれる。
+  // 今回のプログラムだと、circleの複製が簡潔で楽になるので使用している。
+  // また、円ごとに設定を変更するのも簡単なので拡張性が高い。
+  // （今回の例では、円ごとにdelayの値をずらしている）
+  radius: {0:200},
+  strokeWidth: {0:1.0},
+  ...circleObj,
+  opacity: {1:0},
+  delay: -900,
+  duration: 3200
+})
+
+const circle2 = new mojs.Shape({
+  radius: {0:200},
+  ...circleObj,
+  delay: 50,
+  duration: 2000
+})
+
+const circle3 = new mojs.Shape({
+  radius: {0:200},
+  ...circleObj,
+  delay: -50,
+  duration: 2500
+})
+
+const timeline = new mojs.Timeline({
+  repeat: 999
+})
+  .add(burst, burst2, circle, circle2, circle3)
+  .play()
+
+</script>
+</body>
+</html>
