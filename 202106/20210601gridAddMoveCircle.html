@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <title>canvasRect</title>
+</head>
+
+<body>
+    <style>
+      h1 {
+			margin-top: 30px;
+		}
+		section {
+			float: left;
+			margin: 30px;
+		}
+		canvas {
+			border: 1px solid #ccc;
+			box-sizing: border-box;
+		}
+		h2 {
+			text-align: center;
+		}
+		.clear {
+			clear:both;
+		}
+    </style>
+    <section>
+      <p>click</p>
+      <canvas id="e_click" width="250" height="250"></canvas>
+    </section>
+<script>
+/*
+ * クリックしたところに矩形を描画する
+ */
+let wakuWidth = 10;
+let wakuHeight = 10;
+let waku = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+             2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+
+var cs = document.getElementById('e_click');
+var ctx = cs.getContext('2d');
+var w = cs.width;
+var h = cs.height;
+var x = 0;
+var y = 0;
+
+// -------ゲームのクリア判定
+function isClear(){
+  if( waku[ getIndex(cirX, cirY) ] === 1 ){ return true; }
+  return false;
+}
+
+// -------動く円の内部処理--------
+let cirX = 1; // 初期位置X
+let cirY = 1; // 初期位置Y
+let circleFrame = 0;
+let cirDirection = 1;// 0:→ 1:↓ 2:← 3:↑
+
+function moveCircle(isContinue){
+
+  if(!isContinue){
+    circleFrame += 1;
+  }
+
+  // 実際に動き先のマスを見つける処理
+  if(circleFrame % 10 !== 0 || isContinue == true){
+    ; // 何もしない
+  } else{
+    // 右手法で動く
+
+    // 1. 円が右を向いている
+    if(cirDirection === 0){
+      // 円から見て右が空いていたらそっち行く
+      if( waku[ getIndex(cirX, cirY + 1) ] === 0 ){ 
+        cirY++;
+        cirDirection = 1;
+      }
+      // 円から見て右が塞がっており、前が空いていたら前へ行く
+      else if( waku[ getIndex(cirX + 1, cirY) ] === 0 ){ 
+        cirX++;
+      }
+      // 円から見て右も前も塞がっていたら左へ行く
+      else if( waku[ getIndex(cirX, cirY - 1) ] === 0 ){ 
+        cirY--; 
+        cirDirection = 3;
+      }
+      // 円から見て右も前も左も塞がっていたら、後ろへ行く
+      else if( waku[ getIndex(cirX - 1, cirY) ] === 0 ){ 
+        cirX--; 
+        cirDirection = 2;
+      }
+      // 詰みの時は何もしない
+      else{
+        ;
+      }
+    }
+    // 2. 円が下を向いている
+    else if(cirDirection === 1){
+      // 円から見て右が空いていたらそっち行く
+      if( waku[ getIndex(cirX - 1, cirY) ] === 0 ){ 
+        cirX--;
+        cirDirection = 2;
+      }
+      // 円から見て右が塞がっており、前が空いていたら前へ行く
+      else if( waku[ getIndex(cirX, cirY + 1) ] === 0 ){ 
+        cirY++; 
+      }
+      // 円から見て右も前も塞がっていたら左へ行く
+      else if( waku[ getIndex(cirX + 1, cirY) ] === 0 ){ 
+        cirX++;
+        cirDirection = 0;
+      }
+      // 円から見て右も前も左も塞がっていたら、後ろへ行く
+      else if( waku[ getIndex(cirX, cirY - 1) ] === 0 ){ 
+        cirY--; 
+        cirDirection = 3;
+      }
+      // 詰みの時は何もしない
+      else{
+        ;
+      }
+    }
+
+    // 3. 円が左を向いている
+    else if(cirDirection === 2){
+      // 円から見て右が空いていたらそっち行く
+      if( waku[ getIndex(cirX, cirY - 1) ] === 0 ){ 
+        cirY--; 
+        cirDirection = 3;
+      }
+      // 円から見て右が塞がっており、前が空いていたら前へ行く
+      else if( waku[ getIndex(cirX - 1, cirY) ] === 0 ){ 
+        cirX--; 
+      }
+      // 円から見て右も前も塞がっていたら左へ行く
+      else if( waku[ getIndex(cirX, cirY + 1) ] === 0 ){ 
+        cirY++;
+        cirDirection = 1;
+      }
+      // 円から見て右も前も左も塞がっていたら、後ろへ行く
+      else if( waku[ getIndex(cirX + 1, cirY) ] === 0 ){ 
+        cirX++; 
+        cirDirection = 0;
+      }
+      // 詰みの時は何もしない
+      else{
+        ;
+      }
+      
+    }
+
+    // 4. 円が上を向いている
+    else if(cirDirection === 3){
+      // 円から見て右が空いていたらそっち行く
+      if( waku[ getIndex(cirX + 1, cirY) ] === 0 ){ 
+        cirX++;
+        cirDirection = 0;
+      }
+      // 円から見て右が塞がっており、前が空いていたら前へ行く
+      else if( waku[ getIndex(cirX, cirY - 1) ] === 0 ){ 
+        cirY--; 
+      }
+      // 円から見て右も前も塞がっていたら左へ行く
+      else if( waku[ getIndex(cirX - 1, cirY) ] === 0 ){ 
+        cirX--; 
+        cirDirection = 2;
+      }
+      // 円から見て右も前も左も塞がっていたら、後ろへ行く
+      else if( waku[ getIndex(cirX, cirY + 1) ] === 0 ){ 
+        cirY++; 
+        cirDirection = 1;
+      }
+      // 詰みの時は何もしない
+      else{
+        ;
+      }
+    }
+  }
+
+  if(circleFrame > 255){
+    circleFrame = 0;
+  }
+}
+
+// プレイヤーの移動処理（マウスではなく、キーボード操作にした）
+let playerX = 5; // 初期位置X
+let playerY = 5; // 初期位置Y
+let isTrigger = 0; // キーを1回押しただけで一気に動くのを防ぐ
+
+function movePlayer(){
+
+  document.body.addEventListener('keydown',
+    event => {
+        if (event.which == 40) {// ↓
+          if( waku[ getIndex(playerX, playerY + 1) ] !== 2 && isTrigger === 0){
+            playerY++;
+            isTrigger = 1;
+          }
+        }
+        else if (event.which == 38) {// ↑
+          if( waku[ getIndex(playerX, playerY - 1) ] !== 2 && isTrigger === 0){
+            playerY--;
+            isTrigger = 1;
+          }
+        }
+        else if (event.which == 37) {// ←
+          if( waku[ getIndex(playerX - 1, playerY) ] !== 2 && isTrigger === 0){
+            playerX--;
+            isTrigger = 1;
+          }
+        }
+        else if (event.which == 39) {// →
+          if( waku[ getIndex(playerX + 1, playerY) ] !== 2 && isTrigger === 0){
+            playerX++;
+            isTrigger = 1;
+          }
+        }
+        if (event.key === 'z' && isTrigger === 0) {
+          if( waku[ getIndex(playerX, playerY) ] === 0){
+            waku[ getIndex(playerX, playerY) ] = 1;
+            isTrigger = 1;
+          }
+          else if( waku[ getIndex(playerX, playerY) ] === 1){
+            waku[ getIndex(playerX, playerY) ] = 0;
+            isTrigger = 1;
+          }
+        }
+    });
+}
+
+let clearNoChange = 0;
+function draw() {
+
+// 描画前に全削除
+// console.log(waku);
+  ctx.clearRect(0, 0, w, h);
+
+  // グリッドの状態を描画
+  for(let iy = 0; iy < wakuHeight; iy++){
+    for(let ix = 0; ix < wakuWidth; ix++){
+      if(waku[ getIndex(ix, iy) ] === 0){
+       ctx.fillStyle = "rgb(40, 40, 220)";
+       ctx.fillRect((w / wakuWidth) * ix, (h / wakuHeight) * iy, (w / wakuWidth), (h / wakuHeight));
+      } else if(waku[ getIndex(ix, iy) ] === 1){
+       ctx.fillStyle = "rgb(20, 20, 130)";
+       ctx.fillRect((w / wakuWidth) * ix, (h / wakuHeight) * iy, (w / wakuWidth), (h / wakuHeight));
+      } else if(waku[ getIndex(ix, iy) ] === 2){
+       ctx.fillStyle = "rgb(155, 155, 155)";
+       ctx.fillRect((w / wakuWidth) * ix, (h / wakuHeight) * iy, (w / wakuWidth), (h / wakuHeight));
+      }         
+    }
+  }
+
+  // 次に、動く円を描画
+  ctx.beginPath();
+  ctx.fillStyle = "rgb(255, 20, 20)";
+  ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 8, 0, Math.PI * 2, 0);
+  if(cirDirection === 0){ ctx.arc(cirX * (w / wakuWidth) + 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 1){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + 10 + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 2){ ctx.arc(cirX * (w / wakuWidth) - 10 + (w / wakuWidth / 2) , cirY * (h / wakuHeight) + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
+  else if(cirDirection === 3){ ctx.arc(cirX * (w / wakuWidth) + (w / wakuWidth / 2) , cirY * (h / wakuHeight) - 10 + (h / wakuHeight / 2), 4, 0, Math.PI * 2, 0); }
+  ctx.fill();
+
+  // 次に、プレイヤーの枠線を表示
+  ctx.beginPath();
+  ctx.strokeStyle = "rgb(125, 255, 255)";
+  ctx.rect(playerX * (w / wakuWidth) + 2, playerY * (h / wakuHeight) + 2, (w / wakuWidth - 2),(h / wakuHeight - 2));
+  ctx.rect(playerX * (w / wakuWidth) + 4, playerY * (h / wakuHeight) + 4, (w / wakuWidth - 4),(h / wakuHeight - 4));
+  ctx.stroke();
+
+  // 最後にグリッド線を描画
+  ctx.fillStyle = "rgb(200, 200, 200)";
+
+  for(let iy = 0; iy < wakuHeight; iy++){
+    ctx.fillRect(0, (h / wakuHeight) * (iy + 1), w, 1);      
+  }
+
+  for(let ix = 0; ix < wakuWidth; ix++){
+    ctx.fillRect((w / wakuWidth) * (ix + 1), 0, 1, h);      
+  }
+
+  // クリアならクリアと描画
+  if(isClear()){
+    ctx.fillStyle = "rgb(0, 255, 255)";
+    ctx.font = "40px serif";
+    ctx.fillText("Clear~~^。^", w / 15, h / 2, w);
+    clearNoChange = 1;
+  }
+}
+
+// 1次元配列を2次元配列として使うためのヘルパー関数を作成（ミスを減らすために）
+function getIndex(x, y){
+  return y * wakuWidth + x;
+}
+
+// 参考:
+// https://www.webprofessional.jp/quick-tip-game-loop-in-javascript/
+function loop(timestamp) {
+  let progress = timestamp - lastRender
+
+  draw();
+  moveCircle( isClear() );
+
+  // @todo
+  // クリア後にキー入力受け付けなくしたいのだけど、なぜかこれでもできない
+  if(clearNoChange !== 1){
+    movePlayer();
+  }
+  
+  isTrigger = 0;
+
+  lastRender = timestamp;
+  window.requestAnimationFrame(loop);
+}
+let lastRender = 0;
+window.requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
