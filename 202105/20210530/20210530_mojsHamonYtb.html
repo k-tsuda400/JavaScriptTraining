@@ -4,13 +4,17 @@
 <meta charset="UTF-8">
 <title>HTML5 MojsTest</title>
     <style>
-      body {
+      #motion20210530_2 {
+        position: relative;
+        top:150px;
+        left:10px;
   background-color: black
 }
     </style>
 </head>
 <body>
 <!--こっからHTMLコード-->
+<div id="motion20210530_2"></div>
 <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
 <script>
 // 参考サイト：
@@ -18,6 +22,7 @@
 
 // @todo: body を経由せずに背景を黒色にするにはどうすれば？
 const burst = new mojs.Burst({
+  parent:'#motion20210530_2',
   radius: {0:100},
   count: 30,
   children: {
@@ -32,6 +37,7 @@ const burst = new mojs.Burst({
 })
 
 const burst2 = new mojs.Burst({
+  parent:'#motion20210530_2',
   radius: { 0: 100 },
   count: 20,
   children: {
@@ -49,6 +55,7 @@ const burst2 = new mojs.Burst({
 })
 
 const circleObj = {
+  parent:'#motion20210530_2',
   fill: 'none',
   stroke: 'white',
   easing: 'quint.inout',
