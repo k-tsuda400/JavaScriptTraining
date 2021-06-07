@@ -14,10 +14,13 @@
     <script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
 
 
-    <script>
+    <script type="module">
         // 参考コード：https://mox-motion.com/blog/webgl04-2/
         // https://threejs.org/docs/#manual/en/introduction/Loading-3D-models
         // https://stackoverflow.com/questions/55695727/why-isnt-my-3d-model-loading-in-three-js-using-the-gltf-loader
+
+const xhr = new XMLHttpRequest();
+xhr.withCredentials = true; // ここを追加。
         (function () {
             'use strict';
 
