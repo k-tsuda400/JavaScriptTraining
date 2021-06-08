@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>HTML5 MojsTest</title>
+    <style>
+      #motion20210610 {
+        position: relative;
+  background-color: black
+}
+    </style>
+</head>
+<body>
+<!--こっからHTMLコード-->
+<div id="motion20210610"></div>
+<script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+<script>
+  // 参考：https://mojs.github.io/tutorials/shape-swirl/#delta-∆
+const OPTS = {
+  parent:         '#motion20210610',
+  fill:           'none',
+  radius:         100,
+  strokeWidth:    { 50 : 0 },
+  scale:          { 0: 1 },
+  duration:       500,
+  left: 0,        top: 0,
+  easing: 'cubic.out'
+};
+
+const mainCircle = new mojs.Shape({
+  ...OPTS,
+  stroke:         'cyan',
+});
+
+const smallCircles = [];
+const colors = [ '#AAAAFF', '#BBBBFF', '#AA99FF', '#99CCFF' ]
+
+for ( let i = 0; i < 20; i++ ) {
+  let rnum = Math.random() * 2.0 * Math.PI;
+  smallCircles.push(new mojs.Shape({
+    ...OPTS,
+    parent:         mainCircle.el,
+    radius:         { 15 : 30 },
+    strokeWidth:    { 30: 0 },
+    left: '50%',    top: '50%',
+    stroke:         colors[ i % colors.length],
+    delay:          'rand(300, 400)',
+    x:              100 * Math.cos(rnum),
+    y:              100 * Math.sin(rnum),
+    radius:         'rand(5, 20)'
+  })
+ );
+}
+
+document.addEventListener( 'click', function (e) {
+  
+   mainCircle
+    .tune({ x: e.pageX, y: e.pageY  })
+    .replay();
+  
+    for ( let i = 0; i < smallCircles.length; i++ ) {
+      smallCircles[i]
+        .generate()
+        .replay(); 
+    }
+  
+});
+</script>
+</body>
+</html>
