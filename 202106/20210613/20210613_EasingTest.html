@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Easing Test</title>
+    <style>
+      #canvas0613 {
+        position: relative;
+        width:600px;
+        height:300px;
+}
+    </style>
+</head>
+<body>
+
+<canvas id="canvas0613"></canvas>
+
+<script type="module">
+const canvas = document.getElementById('canvas0613');
+const context = canvas.getContext('2d');
+
+// 線の色
+context.strokeStyle = "red";
+
+const GRAPH_MAX = 100;
+
+for(let i = 0 ; i < GRAPH_MAX ; i++)
+{
+  if(i % 2 == 0){
+    continue;
+  }
+  context.beginPath();
+  
+  // 線を引くスタート地点に移動
+  context.moveTo( i, GRAPH_MAX );
+
+  //easingの変数を計算
+  let i_seikika = i / GRAPH_MAX;
+  let easingValue = easeInOutCirc(i_seikika);
+  //let easingValue = easeInOutQuint(i_seikika)
+
+  // スタート地点から(200,200)まで線を引く
+  context.lineTo( i, GRAPH_MAX-(easingValue) * GRAPH_MAX);
+
+  // 線を描画する
+  context.stroke();
+}
+
+context.strokeStyle = "black";
+context.beginPath();
+context.moveTo( 0, GRAPH_MAX );
+context.lineTo( GRAPH_MAX, GRAPH_MAX);
+context.stroke();
+
+context.beginPath();
+context.moveTo( 0, GRAPH_MAX );
+context.lineTo( 0, 0 );
+context.stroke();
+
+function easeInOutCirc(x){
+return x < 0.5
+  ? (1 - Math.sqrt(1 - Math.pow(2 * x, 2))) / 2
+  : (Math.sqrt(1 - Math.pow(-2 * x + 2, 2)) + 1) / 2;
+}
+
+function easeInOutQuint(x){
+return x < 0.5 ? 16 * x * x * x * x * x : 1 - Math.pow(-2 * x + 2, 5) / 2;
+}
+
+</script>
+</body>
+</html>
