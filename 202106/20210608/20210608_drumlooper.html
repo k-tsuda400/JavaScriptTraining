@@ -4,239 +4,7 @@
 <head>
 	<title>drumlooper</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>   
-
-    <script type="text/javascript" src="https://www.guitarland.com/javascripts/Tone.js"></script>
-<!--    <script type="text/javascript" src="https://tonejs.github.io/build/Tone.js"></script> -->
-
-	<script type="text/javascript" src="https://www.guitarland.com/javascripts/StartAudioContext.js"></script>
-
-    <script src="https://www.guitarland.com/javascripts/Rhythm.js"></script>
-
-<script>
-
-function stopIt(){
-   Tone.Transport.stop();
-   Tone.Transport.cancel(0);
-   if(kick) {
-       kick.dispose();
-       kick = null;
-   }
-   if(snare) {
-       snare.dispose();
-       snare = null;
-   }
-   if(conga) {
-       conga.dispose();
-       conga = null;
-   }
-}
-
-function updateTempo()  {
-	var tempo = document.myForm.tempo.value;
-	Tone.Transport.bpm.value = tempo   
-}
-
-
-function updateVolume()  {
-	kick.volume.value = document.myForm.volumeKick.value;
-	snare.volume.value = document.myForm.volumeSnare.value;
-	conga.volume.value = document.myForm.volumeConga.value;
-	closedHiHat.volume.value = document.myForm.volumeHiHat.value;
-}
-
-function updateMute()  {
-	var muteKickBoolean = document.myForm.muteKick.checked;
-	var muteSnareBoolean = document.myForm.muteSnare.checked;
-	var muteCongaBoolean = document.myForm.muteConga.checked;
-	var muteHiHatBoolean = document.myForm.muteHiHat.checked;
-
-	kickPart.mute = muteKickBoolean ? true: false;
-	snarePart.mute = muteSnareBoolean ? true: false;
-    congaPart.mute = muteCongaBoolean? true: false;
-    hiHatPart.mute = muteHiHatBoolean? true: false;
-}
-var kick = null;
-var snare = null;
-var conga = null;
-//	KICK
-function makeKick() {
-	var kick = new Tone.MembraneSynth({
-		"volume" : -1,
-		"envelope" : {
-			"sustain" : 0.1,
-			"attack" : 0.005,
-			"decay" : 0.8
-		},
-		"octaves" : 5
-	}).toMaster();
-//	}).toDestination();
-	return kick;
-}
-
-
-
-//	SNARE
-function makeSnare() {
-	var snare = new Tone.NoiseSynth({
-		"volume" : -7,
-		"envelope" : {
-			"attack" : 0.001,
-			"decay" : 0.5,
-			"sustain" : 0.01,
-			"release" : 0.02
-		},
-		"filterEnvelope" : {
-			"attack" : 0.001,
-			"decay" : 0.1,
-			"sustain" : 0.01,
-			"release" : 0.2
-		}
-	}).toMaster();
-//	}).toDestination();
-    return snare;
-}
-
-//  CONGA
-function makeConga() {
-	var conga = new Tone.MembraneSynth({
-		"pitchDecay" : 0.008,
-		"octaves" : 2,
-		"envelope" : {
-			"attack" : 0.0006,
-			"decay" : 0.5,
-			"sustain" : 0
-		}
-	}).toMaster();
-//	}).toDestination();
-	return conga;
-}
-
-	var lowPass = new Tone.Filter({
-		"frequency": 14000,
-	}).toMaster();
-//	}).toDestination();
-
-//  CLOSED HIHAT
-    var closedHiHat = new Tone.NoiseSynth({
-		"volume" : -14,
-		"filter": {
-			"Q": 1
-		},
-		"envelope": {
-			"attack": 0.01,
-			"decay": 0.15
-		},
-		"filterEnvelope": {
-			"attack": 0.01,
-			"decay": 0.03,
-			"baseFrequency": 4000,
-			"octaves": -2.5,
-			"exponent": 4,
-
-		}
-	}).connect(lowPass);
-
-    function getCongaPitches(patternString, corePitchesArray) {
-        var patternArray = patternString.split(',');
-        var count = 0;
-        var pitches = [];
-        for(let i=0; i<patternArray.length; i++) {
-            if( parseInt(patternArray[i]) > 0) {
-                pitches.push(corePitchesArray[count % corePitchesArray.length])
-                count++;
-            }
-        }
-        return pitches;
-    }
-
-    var kickPart;
-    var snarePart;
-    var congaPart;
-    var hiHatPart;
-    
-    function DrumMachine() {
-        console.log("DrumMachine");
-    // create kick drum part
-        var kickMenu = document.getElementById("someRhythmsKD");
-        var kickPattern = kickMenu.options[kickMenu.selectedIndex].value;
-
-        Rhythm.setOnlyDurationString(kickPattern, 1);
-        var kickRhythm = Rhythm.getTransportCode(1);
-        console.log("kickRhythm="+kickRhythm);
-        if(!kick) {
-            kick = makeKick();
-        }
-		kickPart = new Tone.Part(function(time, value){
-            kick.triggerAttackRelease("A2", "8n", time)
-		}, kickRhythm ).start(0, "1:0");
-//---------------------------------------------------
-
-    // create snare drum part
-        var snareMenu = document.getElementById("someRhythmsSD");
-        var snarePattern = snareMenu.options[snareMenu.selectedIndex].value;
-
-        Rhythm.setOnlyDurationString(snarePattern, 2);
-        var snareRhythm = Rhythm.getTransportCode(2);
-        console.log("snareRhythm="+snareRhythm);
-        if(!snare) {
-            snare = makeSnare();
-        }
-		snarePart = new Tone.Part(function(time){
-            snare.triggerAttack(time)
-		}, snareRhythm ).start(0, "1:0");
-//------------------------------------------------*/
-
-    // create conga drum part
-        var congaMenu = document.getElementById("someRhythmsCD");
-        var congaPattern = congaMenu.options[congaMenu.selectedIndex].value;
-        var congaTones = ["G4","Ab4","F#4"]; //,"G4","Ab4","F#4","G4","Ab4","F#4","G4","Ab4","F#4","G4","Ab4","F#4"];
-        var congaPitches = getCongaPitches(congaPattern, congaTones);
-        
-        Rhythm.setDurationString(congaPattern, congaPitches, 3);
-        var congaMelody = Rhythm.getMelodyWithRhythm(3);
-
-        var congaRhythm = Rhythm.getTransportCode(3);
-
-        console.log("congaRhythm="+congaRhythm);
-        console.log("congaMelody="+congaMelody);
-        if(!conga) {
-            conga = makeConga();
-        }
-		congaPart = new Tone.Part(function(time, note){
-            conga.triggerAttackRelease(note, "8n", time)
-		}, congaMelody ).start(0, "1:0");
-
-    // create hihat part
-        var hiHatMenu = document.getElementById("someRhythmsHH");
-        var hiHatPattern = hiHatMenu.options[hiHatMenu.selectedIndex].value;
-
-        Rhythm.setOnlyDurationString(hiHatPattern, 4);
-        var hiHatRhythm = Rhythm.getTransportCode(4);
-
-//        var hiHatRhythm = Rhythm.createTransportTimeCode(hiHatArray);
-        console.log("hiHatRhythm="+hiHatRhythm);
-
-		hiHatPart = new Tone.Part(function(time){
-			closedHiHat.triggerAttack(time);
-		}, hiHatRhythm).start(0, "1:0");
-
-        updateVolume();
-
-		//TRANSPORT
-		updateMute();
-		Tone.Transport.loopStart = "0:0";
-		Tone.Transport.loopEnd = "2:0";
-		Tone.Transport.loop = true;
-	    var tempo = document.myForm.tempo.value;
-        Tone.Transport.bpm.value = tempo   
-        Tone.Transport.start("+0.1");
-    
-
-    }
-
-</script>
+ 
 </head>
 <body>
 <form name="myForm">
@@ -351,9 +119,238 @@ function makeConga() {
 <input type="button" class="stopButton" VALUE="Stop" onclick="stopIt()"> (click the stop button between plays)
 </p>
 </form>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>   
 
+<script type="text/javascript" src="https://www.guitarland.com/javascripts/Tone.js"></script>
+<!--    <script type="text/javascript" src="https://tonejs.github.io/build/Tone.js"></script> -->
+
+<script type="text/javascript" src="https://www.guitarland.com/javascripts/StartAudioContext.js"></script>
+
+<script src="https://www.guitarland.com/javascripts/Rhythm.js"></script>
 
 <script>
+// 参考：https://www.guitarland.com/MusicTheoryWithToneJS/PlayRhythms.html
+function stopIt(){
+Tone.Transport.stop();
+Tone.Transport.cancel(0);
+if(kick) {
+   kick.dispose();
+   kick = null;
+}
+if(snare) {
+   snare.dispose();
+   snare = null;
+}
+if(conga) {
+   conga.dispose();
+   conga = null;
+}
+}
+
+function updateTempo()  {
+var tempo = document.myForm.tempo.value;
+Tone.Transport.bpm.value = tempo   
+}
+
+
+function updateVolume()  {
+kick.volume.value = document.myForm.volumeKick.value;
+snare.volume.value = document.myForm.volumeSnare.value;
+conga.volume.value = document.myForm.volumeConga.value;
+closedHiHat.volume.value = document.myForm.volumeHiHat.value;
+}
+
+function updateMute()  {
+var muteKickBoolean = document.myForm.muteKick.checked;
+var muteSnareBoolean = document.myForm.muteSnare.checked;
+var muteCongaBoolean = document.myForm.muteConga.checked;
+var muteHiHatBoolean = document.myForm.muteHiHat.checked;
+
+kickPart.mute = muteKickBoolean ? true: false;
+snarePart.mute = muteSnareBoolean ? true: false;
+congaPart.mute = muteCongaBoolean? true: false;
+hiHatPart.mute = muteHiHatBoolean? true: false;
+}
+var kick = null;
+var snare = null;
+var conga = null;
+//	KICK
+function makeKick() {
+var kick = new Tone.MembraneSynth({
+    "volume" : -1,
+    "envelope" : {
+        "sustain" : 0.1,
+        "attack" : 0.005,
+        "decay" : 0.8
+    },
+    "octaves" : 5
+}).toMaster();
+//	}).toDestination();
+return kick;
+}
+
+
+
+//	SNARE
+function makeSnare() {
+var snare = new Tone.NoiseSynth({
+    "volume" : -7,
+    "envelope" : {
+        "attack" : 0.001,
+        "decay" : 0.5,
+        "sustain" : 0.01,
+        "release" : 0.02
+    },
+    "filterEnvelope" : {
+        "attack" : 0.001,
+        "decay" : 0.1,
+        "sustain" : 0.01,
+        "release" : 0.2
+    }
+}).toMaster();
+//	}).toDestination();
+return snare;
+}
+
+//  CONGA
+function makeConga() {
+var conga = new Tone.MembraneSynth({
+    "pitchDecay" : 0.008,
+    "octaves" : 2,
+    "envelope" : {
+        "attack" : 0.0006,
+        "decay" : 0.5,
+        "sustain" : 0
+    }
+}).toMaster();
+//	}).toDestination();
+return conga;
+}
+
+var lowPass = new Tone.Filter({
+    "frequency": 14000,
+}).toMaster();
+//	}).toDestination();
+
+//  CLOSED HIHAT
+var closedHiHat = new Tone.NoiseSynth({
+    "volume" : -14,
+    "filter": {
+        "Q": 1
+    },
+    "envelope": {
+        "attack": 0.01,
+        "decay": 0.15
+    },
+    "filterEnvelope": {
+        "attack": 0.01,
+        "decay": 0.03,
+        "baseFrequency": 4000,
+        "octaves": -2.5,
+        "exponent": 4,
+
+    }
+}).connect(lowPass);
+
+function getCongaPitches(patternString, corePitchesArray) {
+    var patternArray = patternString.split(',');
+    var count = 0;
+    var pitches = [];
+    for(let i=0; i<patternArray.length; i++) {
+        if( parseInt(patternArray[i]) > 0) {
+            pitches.push(corePitchesArray[count % corePitchesArray.length])
+            count++;
+        }
+    }
+    return pitches;
+}
+
+var kickPart;
+var snarePart;
+var congaPart;
+var hiHatPart;
+
+function DrumMachine() {
+    console.log("DrumMachine");
+// create kick drum part
+    var kickMenu = document.getElementById("someRhythmsKD");
+    var kickPattern = kickMenu.options[kickMenu.selectedIndex].value;
+
+    Rhythm.setOnlyDurationString(kickPattern, 1);
+    var kickRhythm = Rhythm.getTransportCode(1);
+    console.log("kickRhythm="+kickRhythm);
+    if(!kick) {
+        kick = makeKick();
+    }
+    kickPart = new Tone.Part(function(time, value){
+        kick.triggerAttackRelease("A2", "8n", time)
+    }, kickRhythm ).start(0, "1:0");
+//---------------------------------------------------
+
+// create snare drum part
+    var snareMenu = document.getElementById("someRhythmsSD");
+    var snarePattern = snareMenu.options[snareMenu.selectedIndex].value;
+
+    Rhythm.setOnlyDurationString(snarePattern, 2);
+    var snareRhythm = Rhythm.getTransportCode(2);
+    console.log("snareRhythm="+snareRhythm);
+    if(!snare) {
+        snare = makeSnare();
+    }
+    snarePart = new Tone.Part(function(time){
+        snare.triggerAttack(time)
+    }, snareRhythm ).start(0, "1:0");
+//------------------------------------------------*/
+
+// create conga drum part
+    var congaMenu = document.getElementById("someRhythmsCD");
+    var congaPattern = congaMenu.options[congaMenu.selectedIndex].value;
+    var congaTones = ["G4","Ab4","F#4"]; //,"G4","Ab4","F#4","G4","Ab4","F#4","G4","Ab4","F#4","G4","Ab4","F#4"];
+    var congaPitches = getCongaPitches(congaPattern, congaTones);
+    
+    Rhythm.setDurationString(congaPattern, congaPitches, 3);
+    var congaMelody = Rhythm.getMelodyWithRhythm(3);
+
+    var congaRhythm = Rhythm.getTransportCode(3);
+
+    console.log("congaRhythm="+congaRhythm);
+    console.log("congaMelody="+congaMelody);
+    if(!conga) {
+        conga = makeConga();
+    }
+    congaPart = new Tone.Part(function(time, note){
+        conga.triggerAttackRelease(note, "8n", time)
+    }, congaMelody ).start(0, "1:0");
+
+// create hihat part
+    var hiHatMenu = document.getElementById("someRhythmsHH");
+    var hiHatPattern = hiHatMenu.options[hiHatMenu.selectedIndex].value;
+
+    Rhythm.setOnlyDurationString(hiHatPattern, 4);
+    var hiHatRhythm = Rhythm.getTransportCode(4);
+
+//        var hiHatRhythm = Rhythm.createTransportTimeCode(hiHatArray);
+    console.log("hiHatRhythm="+hiHatRhythm);
+
+    hiHatPart = new Tone.Part(function(time){
+        closedHiHat.triggerAttack(time);
+    }, hiHatRhythm).start(0, "1:0");
+
+    updateVolume();
+
+    //TRANSPORT
+    updateMute();
+    Tone.Transport.loopStart = "0:0";
+    Tone.Transport.loopEnd = "2:0";
+    Tone.Transport.loop = true;
+    var tempo = document.myForm.tempo.value;
+    Tone.Transport.bpm.value = tempo   
+    Tone.Transport.start("+0.1");
+
+
+}
+    // -----
     var mybuttonDrumMachine = document.getElementById("buttonDrumMachine");
 
     // onclick bindings
