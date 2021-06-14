@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>pixi.js v4 テスト</title>
+    <style>
+      * { margin:0; padding:0; }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
+    <script>
+      // pixi.jsのアプリケーションを作成
+      const app = new PIXI.Application();
+ 
+      // bodyにpixi.jsのview(ステージ)を追加する
+      document.body.appendChild(app.view);
+ 
+      // グラフィックオブジェクトの作成
+      const square = new PIXI.Graphics();
+      // グラフィックオブジェクトの設定
+      square.width = 100;     // 横幅の設定
+      square.height = 100;    // 縦幅の設定
+      square.x = 50;          // 横座標の設定
+      square.y = 50;          // 縦座標の設定
+ 
+      // グラフィックオブジェクトの塗りつぶし設定
+      square.beginFill(0xffaaff);    // 指定の色で塗りつぶし開始準備
+      for(let i = 0 ; i < 100 ; ++i){
+        for(let j = 0 ; j < 100 ; ++j){
+          square.drawRect(i*5+1 ,j*5+1,1,1);  // 矩形を描写する
+        }
+      }
+
+      square.beginFill(0xaaddaa);    // 指定の色で塗りつぶし開始準備
+      for(let i = 0 ; i < 100 ; ++i){
+        for(let j = 0 ; j < 100 ; ++j){
+          square.drawRect(i*5+1-200 ,j*5+1-200,i%8,j%8);  // 矩形を描写する
+        }
+      }
+
+      square.beginFill(0xccccdd);    // 指定の色で塗りつぶし開始準備
+      for(let i = 0 ; i < 100 ; ++i){
+        for(let j = 0 ; j < 100 ; ++j){
+          square.drawRect(i*5+1+200 ,j*5+1-300,(i+j)%10,(i+j)%8);  // 矩形を描写する
+        }
+      }
+
+      /*
+      square.beginFill(0xff00ff);    // 指定の色で塗りつぶし開始準備
+      square.drawRect(0,0,300,300);  // 矩形を描写する
+      square.beginFill(0xee00ee);    // 指定の色で塗りつぶし開始準備
+      square.drawRect(5,5,90,90);  // 矩形を描写する
+      */
+
+      square.endFill();              // 塗りつぶしを完了する
+ 
+      // ステージに追加する
+      app.stage.addChild(square);
+
+      // ゲームループを実装
+      app.ticker.add(delta => this.gameloop(delta,square));
+ 
+      // ゲームループで動かす関数
+      function gameloop(delta, square) {
+        // ０～３の乱数を発生させてswitchで条件分岐
+        switch(Math.floor( Math.random() * 4 )) {
+          case 0:
+            square.x += 20;
+          case 1:
+            square.x -= 10;
+          case 2:
+            square.y += 15;
+          case 3:
+            square.y -= 10;
+        }
+        if( square.x < 0 ){
+          square.x = 0 + 20;
+        }
+        if( square.x > 200 ){
+          square.x = 200 - 10;
+        }
+        if( square.y < 0 ){
+          square.y = 0 + 15;
+        }
+        if( square.y > 200 ){
+          square.y = 200 - 10;
+        }
+      }
+    </script>
+  </body>
+</html>
