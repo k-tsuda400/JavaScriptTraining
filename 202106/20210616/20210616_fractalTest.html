@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>fractal</title>
+    <style>
+      * { margin:0; padding:0; }
+    </style>
+  </head>
+  <body>
+    <canvas id="Canvas20210616" width="960" height="540"></canvas>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+  <script>
+    // 参考サイト：https://ics.media/tutorial-createjs/fractal/
+    window.addEventListener("load", init);
+    function init() {
+      // ステージを作成
+      var stage = new createjs.Stage("Canvas20210616");
+
+      // 描画用のシェイプを作成
+      var shape = new createjs.Shape();
+      stage.addChild(shape);
+
+      // 正三角形の一辺の大きさを指定
+      var SIZE = 600;
+      // 正三角形の高さを求める
+      var HEIGHT = SIZE * Math.sin(60 * Math.PI / 180);
+
+      // フラクタルの三角形を描く
+      drawTriangle(7, 0, HEIGHT, SIZE / 2, 0, SIZE, HEIGHT);
+
+      // 三角形を描く関数
+      function drawTriangle(level,
+                            x1, y1,
+                            x2, y2,
+                            x3, y3) {
+        // 再帰レベルが0になったら描く
+        if (level <= 0) {
+          // 線の種類を設定
+          shape.graphics.beginStroke("DarkRed").setStrokeStyle(2.0);
+          // 三角形を描く
+          shape.graphics.moveTo(x1, y1); // 始点を設定
+          shape.graphics.lineTo(x2, y2); // 始点と2点目を結ぶ
+          shape.graphics.lineTo(x3, y3); // 2点目と3点目を結ぶ
+          shape.graphics.closePath(); // 始点まで結ぶ
+        } else { // 再帰レベルが 0 になるまで細分化を行う
+
+          // 正三角形の3辺の中点を求める
+          // 1辺目の中点
+          var nx1 = (x1 + x2) / 2;
+          var ny1 = (y1 + y2) / 2;
+          // 2辺目の中点
+          var nx2 = (x2 + x3) / 2;
+          var ny2 = (y2 + y3) / 2;
+          // 3辺目の中点
+          var nx3 = (x3 + x1) / 2;
+          var ny3 = (y3 + y1) / 2;
+
+          // 再帰レベルを更新
+          level = level - 1;
+          // 中点を元に細分化を行う
+          drawTriangle(level, x1, y1, nx1, ny1, nx3, ny3);
+          drawTriangle(level, x2, y2, nx1, ny1, nx2, ny2);
+          drawTriangle(level, x3, y3, nx2, ny2, nx3, ny3);
+        }
+      } // -- functionここまで
+
+      // 画面を更新
+      stage.update();
+    }
+  </script>
+  </body>
+</html>
