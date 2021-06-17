@@ -1,0 +1,1049 @@
+
+<html>
+<head>
+<title>RayMarchingTest</title>
+
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS" />
+<style type="text/css">
+body { margin: 2; padding: 0;overflow: hidden;}
+#sample {
+  background-color:white;
+  position:absolute;
+}
+
+#samplet {
+background-color:white;
+position:absolute;
+display: none;
+/*z-index:1;z-index:auto;*/
+/* mix-blend-mode: overlay;*/
+}
+
+</style>
+<script src="http://www.wb.commufa.jp/taitan9p/sp_j2017/smpsc0Wcan/sp0/minMatrixb.js"></script>
+
+<script id="vs" type="x-shader/x-vertex">
+#define PI 3.14159265359
+
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec4 color;
+attribute vec2 textureCoord;
+
+attribute float lifetimeT;//パーティクル用
+attribute float shiftT;//パーティクル用
+
+uniform   mat4 mMatrix;
+uniform   mat4 mvpMatrix;
+uniform   mat4 invMatrix;
+uniform   vec3 lightDirection;
+uniform   bool useLight;
+
+uniform bool usePA;//パーティクル用
+uniform float timeT;//パーティクル用
+uniform float sizeT;//パーティクル用
+
+varying   vec4 vColor;
+varying   vec2 vTextureCoord;
+
+varying float alphaT;
+
+void main(void){
+
+     if(usePA){
+        if(useLight){
+		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;
+		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);
+		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);
+	}else{
+		vColor         = color;
+	}
+
+vTextureCoord = textureCoord;
+
+        float hank = 256.0;
+        float angle = - 90.0;
+        float degree = 0.0;
+        float depression = 30.0;
+        float radi0 = PI/180.0;
+
+        float t = fract(timeT*0.6 / lifetimeT + shiftT);
+
+         angle -= 0.5*t;
+         degree += 1.0*t;
+
+        float dip = depression*sin(degree*radi0);
+
+        float xx =hank*cos(angle*radi0)*cos(dip*radi0);
+        float yy =hank*sin(dip*radi0);
+        float zz =hank*sin(angle*radi0)*cos(dip*radi0);
+ 
+        alphaT = 1.0 - smoothstep(0.8, 1.0, t);//1.0 - smoothstep(0.8, 1.0, t)
+ 
+        vec3 p = position * vec3(xx,yy,zz);//
+        vec4 mvPosition = mvpMatrix * vec4(p,alphaT);//
+        gl_PointSize = (sizeT * (1.0 + smoothstep(0.8, 1.0, t) * 6.0));
+        gl_Position = vec4(mvPosition);
+
+       }
+
+     else{
+	if(useLight){
+		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;
+		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);
+		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);
+	  }else{
+		vColor         = color;
+	   }
+
+	vTextureCoord      = textureCoord;
+	gl_Position        = mvpMatrix * vec4(position, 1.0);
+
+       }
+
+   }
+</script>
+		
+<script id="fs" type="x-shader/x-fragment">
+
+precision mediump float;
+
+uniform sampler2D texture;
+uniform float texFlag;
+
+varying vec4  vColor;
+varying vec2  vTextureCoord;
+
+varying float alphaT;
+
+uniform float time;
+uniform vec2  mouse;
+uniform vec2  resolution;
+
+#define TIMER time*10.0
+
+vec4 col;
+vec4 backcol0;vec4 backcol1;vec4 backcol2;
+float colFlag=0.0;
+
+//レイマーチング用定数、関数など
+
+const float PIf = 3.14159265;
+const float angle = 60.0;
+const float fov = angle * 0.5 * PIf / 180.0;
+vec3  cPos =vec3(0.0, 3.0, 3.0-time*1.5);//vec3(0.0, 5.0, 5.0) 
+
+const vec3 cDir = vec3(0.0, -0.707, -0.707);
+const vec3 cUp  = vec3(0.0,  0.707, -0.707);
+
+const vec3 lightDir = vec3(-0.577, 0.577, 0.577);
+
+
+
+//繰り返し描画するとき
+vec3 trans(vec3 p){
+    return mod(p, 4.0) - 2.0;
+}
+
+
+//回転１ rotate
+
+vec3 rotate(vec3 p, float angle, vec3 axis){
+    vec3 a = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float r = 1.0 - c;
+    mat3 m = mat3(
+        a.x * a.x * r + c,
+        a.y * a.x * r + a.z * s,
+        a.z * a.x * r - a.y * s,
+        a.x * a.y * r - a.z * s,
+        a.y * a.y * r + c,
+        a.z * a.y * r + a.x * s,
+        a.x * a.z * r + a.y * s,
+        a.y * a.z * r - a.x * s,
+        a.z * a.z * r + c
+    );
+    return m * p;
+}
+
+//スムーズに結合
+float smoothMin(float d1, float d2, float k){
+    float h = exp(-k * d1) + exp(-k * d2);
+    return -log(h) / k;
+}
+
+//平面の場合
+// floor distance function
+float distFuncFloor(vec3 p){
+    //vec3 q = rotate(p, radians(20.0), vec3(1.0, 0.0, 0.0));
+
+	return dot(p, vec3(0.0, 1.2, 0.0)) + 1.0;
+}
+
+//柱の描画
+float distFuncTyuu(vec3 p){
+    //vec3 q = rotate(p, radians(20.0), vec3(1.0, 0.0, 0.0));
+
+	return length(p.xz) - 0.5;
+}
+
+//ランダム生成関数
+    float random(vec2 _st){      
+      return fract(sin(dot(_st.xy,vec2(12.9898,78.233))) * 43758.5453);
+     }
+
+//tunnelの描画
+float distFuncTunnel(vec3 p){
+    //vec3 q = rotate(p, radians(10.0), vec3(0.0, 1.0, 0.0));
+
+       return 4.0-(length(p.xy*vec2(1.6,1.0)));
+}
+
+// distance function
+
+float distFunc0(vec3 p){
+
+	float d1 = distFuncTyuu(trans(p));//trans(p)繰り返し描画
+        float d2=distFuncTunnel(p);
+	float d3 = distFuncFloor(p);
+//colFlag=2.0;
+
+    if(d3<d2&&d3<d1){colFlag=1.0;}
+    else{colFlag=2.0;}//if(d2<d1||d3<d2)
+
+   //return d1;
+
+      return smoothMin(smoothMin(d2, d3, 8.0), d1, 8.0);//smoothMin(d1, d2,8.0);
+}
+
+vec3 getNormal(vec3 p){
+
+	float d = 0.0001;
+	return normalize(vec3(
+		distFunc0(p + vec3(d, 0.0, 0.0)) - distFunc0(p + vec3( -d, 0.0, 0.0)),
+		distFunc0(p + vec3(0.0,   d, 0.0)) - distFunc0(p + vec3(0.0,  -d, 0.0)),
+		distFunc0(p + vec3(0.0, 0.0,   d)) - distFunc0(p + vec3(0.0, 0.0,  -d))
+	));
+}
+
+//ノイズなど
+
+
+//四角パターンタイルテクスチャ
+float sdHex(in vec2 p) {
+    float t = 0.4;//time
+    float c = cos(t);
+    float s = sin(t);
+    mat2 m = mat2(c, -s, s, c);
+    p = m * sin(p * PIf * 3.0);
+    return min(abs(p.x + p.y), abs(p.x - p.y)) - 0.1;
+}
+
+
+
+void main(void){
+
+vec2 pos=(gl_FragCoord.xy*2.0-resolution)/resolution.y;//原点は真ん中
+//vec2 uv = ( gl_FragCoord.xy / resolution.xy ) * 2.0 - 1.0;//原点は真ん中
+//vec2 st = gl_FragCoord.xy/resolution.xy;//原点は左下？
+
+//レイマーチングで図形描画
+
+	// camera and ray
+
+	vec3 cSide = cross(cDir, cUp);
+	float targetDepth = 1.0;
+
+//vec3 ray = normalize(cSide * pos.x + cUp * pos.y + cDir * targetDepth);
+
+vec3 ray = normalize(vec3(sin(fov) * pos.x, sin(fov) * pos.y, -cos(fov)));
+	
+	// marching loop
+	float tmp, dist;
+	tmp = 0.0;
+	vec3 dPos = cPos;//256
+	for(int i = 0; i < 36; i++){
+		dist = distFunc0(dPos);
+		if(dist < 0.001){break;}
+		tmp += dist;
+		dPos = cPos + tmp * ray;
+	}
+
+//テクスチャにする模様描画
+//レンガっぽいパターン模様
+    float colf1 = sdHex(dPos.xz * 0.4);
+
+//線と四角のパターン模様
+vec2 g = abs(fract(dPos.xz/0.8)-0.5);//32.0
+	
+	// hit check
+	if(abs(dist) < 0.001){
+		vec3 normal = getNormal(dPos);
+		float diff = clamp(dot(lightDir, normal), 0.1, 1.0);
+
+
+
+            if(colFlag==2.0){
+               backcol0 = vec4(vec3(colf1*0.7,colf1*0.7,colf1*0.7), 1.0);
+             }
+            else if(colFlag==1.0){
+vec4 glfcol0 =vec4(max(max(g.x, g.y), min(g.x, g.y)*2.0));
+backcol0 =vec4(0.6*glfcol0.r,glfcol0.g*0.3,glfcol0.b*0.3,1.0);//glfcol0.r*0.1 glfcol0.a
+             }
+
+	}else{
+		backcol0 = vec4(vec3(0.0), 1.0);//vec4(vec3(0.0), 1.0);
+	}
+
+
+vec4 smpColor = texture2D(texture, vTextureCoord);
+
+vec4 smpColor0 = texture2D(texture, gl_PointCoord);
+
+     if(texFlag==0.0){
+        gl_FragColor  =vColor;
+         }
+     else if(texFlag==1.0){
+        gl_FragColor  =vColor*smpColor;
+         }
+     else if(texFlag==2.0){
+	gl_FragColor=backcol0;
+     }
+     else if(texFlag==3.0){
+        if(smpColor0.a == 0.0){
+           discard;
+            }
+        else{
+        gl_FragColor=vColor*smpColor0;
+            }
+     }
+}
+
+</script>
+
+<script id="bvs" type="x-shader/x-vertex">
+attribute vec3 position;
+attribute vec4 color;
+uniform   mat4 mvpMatrix;
+varying   vec4 vColor;
+
+void main(void){
+	vColor      = color;
+	gl_Position = mvpMatrix * vec4(position, 1.0);
+}
+</script>
+		
+<script id="bfs" type="x-shader/x-fragment">
+precision mediump float;
+#extension GL_OES_standard_derivatives : enable
+
+uniform sampler2D texture;
+uniform bool useBlur;
+
+uniform float time;
+//uniform vec2  mouse;
+uniform vec2  resolution;
+
+varying vec4  vColor;
+
+const float tFrag = 1.0 / 256.0;
+const float nFrag = 1.0 / 30.0;
+const vec2  centerOffset = vec2(128.0, 128.0);
+
+vec4 backcol_b;
+
+vec2 tex(vec2 uv){
+    return texture2D(texture, uv).xy - 0.5;
+}
+
+void main(void){
+
+vec4 destColor0=texture2D(texture, gl_FragCoord.st*tFrag);
+//ぼかしは掛けずにただ背景用平面としてこのShaderを使用
+        gl_FragColor = vColor*destColor0;
+
+}
+
+</script>
+		
+<script type="text/javascript">
+// WebGLでフレームバッファを使って
+var c,wid,hei,mx,my;
+var startTime;
+var time = 0.0;
+var tempTime = 0.0;
+var lifetimeT=new Array();
+var shiftT=new Array();
+
+onload = function(){
+	// canvasエレメントを取得
+	c = document.getElementById('sample');
+	wid = 256;hei = 256;
+	
+	// webglコンテキストを取得
+	var gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+	
+	// エレメントへの参照を取得
+	//var eBlur = document.getElementById('blur');
+	
+	// フレームバッファ用シェーダ-start----------------------------------------
+	
+	// 頂点シェーダとフラグメントシェーダ、プログラムオブジェクトの生成
+	var v_shader = create_shader('vs');
+	var f_shader = create_shader('fs');
+	var prg = create_program(v_shader, f_shader);
+	
+	// attributeLocationを配列に取得
+	var attLocation = new Array();
+	attLocation[0] = gl.getAttribLocation(prg, 'position');
+	attLocation[1] = gl.getAttribLocation(prg, 'normal');
+	attLocation[2] = gl.getAttribLocation(prg, 'color');
+	attLocation[3] = gl.getAttribLocation(prg, 'textureCoord');
+attLocation[4] = gl.getAttribLocation(prg, 'lifetimeT');
+attLocation[5] = gl.getAttribLocation(prg, 'shiftT');
+	
+	// attributeの要素数を配列に格納
+	var attStride = new Array();
+	attStride[0] = 3;
+	attStride[1] = 3;
+	attStride[2] = 4;
+	attStride[3] = 2;
+        attStride[4] = 1;
+	attStride[5] = 1;
+	
+	// 球体モデル
+	var earthData     = sphere(16, 16, 0.01, [1.0, 1.0, 1.0, 1.0]);
+	var ePosition     = create_vbo(earthData.p);
+	var eNormal       = create_vbo(earthData.n);
+	var eColor        = create_vbo(earthData.c);
+	var eTextureCoord = create_vbo(earthData.t);
+	var eVBOList      = [ePosition, eNormal, eColor, eTextureCoord];
+	var eIndex        = create_ibo(earthData.i);
+
+     //平面モデル用
+        var cylinderData = PlaneY([1.0,1.0,1.0,1.0]);
+
+	var positionC = create_vbo(cylinderData.p);
+	var normalC = create_vbo(cylinderData.n);
+	var colorC = create_vbo(cylinderData.c);
+        var TextureCoordC=create_vbo(cylinderData.t);
+
+        var cVBOList      = [positionC, normalC, colorC, TextureCoordC];
+
+	var indexC =create_ibo(cylinderData.i);
+
+     //点々用
+
+//地球モデルの分割数が６４だと何故かポイント数が4225以上でないとこの後に描画するモデルが表示されない？（chromeでは）
+//var MDData = MakeDot1(4225,[0.9,0.9,0.9,1.0]);//100000
+//地球モデルの分割数を減らせばここのポイント数が少なくてもこの後の描画はちゃんとされる。
+    var MDData = MakeDot1(4000,[0.0,0.8,0.9,1.0]);//100000
+
+
+// VBOの生成
+	var pos_vboMD = create_vbo(MDData.p);
+	var nor_vboMD = create_vbo(MDData.n);
+	var col_vboMD = create_vbo(MDData.c);
+	var TextureCoordMD = create_vbo(MDData.t);
+        var life_vboMD = create_vbo(MDData.l);
+	var shift_vboMD = create_vbo(MDData.sh);
+
+        var VBOListMD= [pos_vboMD, nor_vboMD,col_vboMD, TextureCoordMD,life_vboMD,shift_vboMD];	
+
+// IBOの生成
+	//var iboMD = create_ibo(indexMD);
+	
+	// uniformLocationを配列に取得
+	var uniLocation = new Array();
+	uniLocation[0] = gl.getUniformLocation(prg, 'mMatrix');
+	uniLocation[1] = gl.getUniformLocation(prg, 'mvpMatrix');
+	uniLocation[2] = gl.getUniformLocation(prg, 'invMatrix');
+	uniLocation[3] = gl.getUniformLocation(prg, 'lightDirection');
+	uniLocation[4] = gl.getUniformLocation(prg, 'useLight');
+	uniLocation[5] = gl.getUniformLocation(prg, 'texture');
+        uniLocation[6] = gl.getUniformLocation(prg, 'texFlag');
+
+//背景分
+uniLocation[7] = gl.getUniformLocation(prg, 'time');
+uniLocation[8] = gl.getUniformLocation(prg, 'mouse');
+uniLocation[9] = gl.getUniformLocation(prg, 'resolution');
+
+uniLocation[10] = gl.getUniformLocation(prg, 'usePA');
+uniLocation[11] = gl.getUniformLocation(prg, 'timeT');
+uniLocation[12] = gl.getUniformLocation(prg, 'sizeT');
+	
+	// フレームバッファ用-end--------------------------------------------------
+	
+	// 描画用平面・ブラーフィルター用シェーダ-start----------------------------------------
+	
+	// 頂点シェーダとフラグメントシェーダ、プログラムオブジェクトの生成
+	v_shader = create_shader('bvs');
+	f_shader = create_shader('bfs');
+	var bPrg = create_program(v_shader, f_shader);
+	
+	// attributeLocationを配列に取得
+	var bAttLocation = new Array();
+	bAttLocation[0] = gl.getAttribLocation(bPrg, 'position');
+	bAttLocation[1] = gl.getAttribLocation(bPrg, 'color');
+	
+	// attributeの要素数を配列に格納
+	var bAttStride = new Array();
+	bAttStride[0] = 3;
+	bAttStride[1] = 4;
+	
+	// 頂点の位置
+	var position = [
+		-1.0,  1.0,  0.0,
+		 1.0,  1.0,  0.0,
+		-1.0, -1.0,  0.0,
+		 1.0, -1.0,  0.0
+	];
+	
+	// 頂点色
+	var color = [
+		1.0, 1.0, 1.0, 1.0,
+		1.0, 1.0, 1.0, 1.0,
+		1.0, 1.0, 1.0, 1.0,
+		1.0, 1.0, 1.0, 1.0
+	];
+	
+	// 頂点インデックス
+	var index = [
+		0, 1, 2,
+		3, 2, 1
+	];
+	
+	// VBOとIBOの生成
+	var vPosition     = create_vbo(position);
+	var vColor        = create_vbo(color);
+	var vVBOList      = [vPosition, vColor];
+	var vIndex        = create_ibo(index);
+	
+	// uniformLocationを配列に取得
+	var bUniLocation = new Array();
+	bUniLocation[0] = gl.getUniformLocation(bPrg, 'mvpMatrix');
+	bUniLocation[1] = gl.getUniformLocation(bPrg, 'texture');
+	bUniLocation[2] = gl.getUniformLocation(bPrg, 'useBlur');
+        bUniLocation[3] = gl.getUniformLocation(bPrg, 'time');
+	bUniLocation[4] = gl.getUniformLocation(bPrg, 'mouse');
+        bUniLocation[5] = gl.getUniformLocation(bPrg, 'resolution');
+	
+	// 描画用平面・ブラーフィルター用-end--------------------------------------------------
+
+startTime = new Date().getTime();
+	
+	// 各種行列の生成と初期化
+	var m = new matIV();
+	var mMatrix   = m.identity(m.create());
+	var vMatrix   = m.identity(m.create());
+	var pMatrix   = m.identity(m.create());
+	var tmpMatrix = m.identity(m.create());
+	var mvpMatrix = m.identity(m.create());
+	var invMatrix = m.identity(m.create());
+	
+	// 深度テストを有効にする
+	gl.enable(gl.DEPTH_TEST);
+	gl.depthFunc(gl.LEQUAL);
+        gl.enable(gl.BLEND);
+
+//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+//gl.blendFunc(gl.ONE, gl.ONE);
+
+// ブレンドファクター
+gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA , gl.ONE, gl.ONE);//
+	
+	// テクスチャ関連
+	var texture0 = null;
+	var texture1 = null;
+	create_texture('earth128.gif', 0);//地球
+	gl.activeTexture(gl.TEXTURE0);
+	
+	// フレームバッファオブジェクトの取得
+	var fBufferWidth  = 256;
+	var fBufferHeight = 256;
+	var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight);
+		
+	// カウンタの宣言
+	var count = 0;
+	
+	// 恒常ループ
+	(function(){
+
+time = (new Date().getTime() - startTime) * 0.001;
+
+		// カウンタをインクリメントする
+		count++;
+		
+		// カウンタを元にラジアンを算出
+		var rad  = (count % 360) * Math.PI / 180;
+                var radi=Math.PI / 180;
+		
+		// フレームバッファをバインド
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fBuffer.f);
+		
+		// フレームバッファを初期化
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		
+// プログラムオブジェクトの有効化(シェーダの選択)
+	gl.useProgram(prg);
+	
+		// 平面用のVBOとIBOをセット
+		set_attribute(cVBOList, attLocation, attStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexC);
+		
+		// ライト関連
+		var lightDirection = [-1.0, 2.0, 1.0];
+		
+		// ビュー×プロジェクション座標変換行列
+		m.lookAt([0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0], vMatrix);
+		m.perspective(45, fBufferWidth / fBufferHeight, 0.1, 100, pMatrix);
+		m.multiply(pMatrix, vMatrix, tmpMatrix);
+		
+// 背景用平面の設定ーーーーーーーーーーーーーーーー
+//gl.bindTexture(gl.TEXTURE_2D,texture1);//fBuffer.t
+		
+		m.identity(mMatrix);
+		m.scale(mMatrix, [2.2, 2.2, 2.2], mMatrix);
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		m.inverse(mMatrix, invMatrix);
+		gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+		gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+		gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+		gl.uniform3fv(uniLocation[3], lightDirection);
+		gl.uniform1i(uniLocation[4], false);
+		//gl.uniform1i(uniLocation[5], 0);
+
+gl.uniform1f(uniLocation[6], 2.0);
+
+gl.uniform1f(uniLocation[7], time+tempTime);
+//gl.uniform2fv(uniLocation[8], [mx, my]);
+gl.uniform2fv(uniLocation[9], [wid, hei]);
+
+gl.uniform1f(uniLocation[10], false);
+gl.uniform1f(uniLocation[11],time+tempTime);
+//gl.uniform1f(uniLocation[12],1.0);//size
+
+//フレームバッファに描画
+	gl.drawElements(gl.TRIANGLES,cylinderData.i.length, gl.UNSIGNED_SHORT, 0);
+
+
+//ランダムドットをフレームバッファにレンダリングーーーーーーーーーーーーーーーー
+
+gl.bindTexture(gl.TEXTURE_2D,texture1);//fBuffer.t
+		
+		m.identity(mMatrix);
+		m.scale(mMatrix, [0.3, 0.3, 0.3], mMatrix);
+//m.rotate(mMatrix, 40*radi, [0.0, 1.0, 0.0], mMatrix);
+//m.rotate(mMatrix, -30*radi, [1.0, 0.0, 0.0], mMatrix);
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		m.inverse(mMatrix, invMatrix);
+		gl.uniformMatrix4fv(uniLocation[0], true, mMatrix);
+		gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+		gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+		gl.uniform3fv(uniLocation[3], lightDirection);
+		gl.uniform1i(uniLocation[4], false);
+		gl.uniform1i(uniLocation[5], 0);
+
+gl.uniform1f(uniLocation[6], 3.0);
+
+//gl.uniform1f(uniLocation[7], time+tempTime);
+//gl.uniform2fv(uniLocation[8], [mx, my]);
+//gl.uniform2fv(uniLocation[9], [wid, hei]);
+
+gl.uniform1f(uniLocation[10], true);
+gl.uniform1f(uniLocation[11],time+tempTime);
+gl.uniform1f(uniLocation[12],2.0);//pointsize
+
+
+// VBO を登録する
+	set_attribute(VBOListMD, attLocation, attStride);
+// IBOをバインドして登録する
+	//gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboMD);//登録しない。
+
+// 点々の描画
+gl.drawArrays(gl.POINTS, 0, MDData.p.length / 3);
+
+	// フレームバッファのバインドを解除
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+//背景描画用平面を使用かブラーフィルターをかける場合		
+// プログラムオブジェクトの有効化(シェーダの切り替え)
+		gl.useProgram(bPrg);
+
+		// ブラーフィルターをかけるかどうかの真偽値
+		var useBlur = true;//eBlur.checked
+		
+		// 板ポリゴンのVBOとIBOをセット
+		set_attribute(vVBOList, bAttLocation, bAttStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vIndex);
+		
+		// フレームバッファに描き込んだ内容をテクスチャとして適用
+		gl.bindTexture(gl.TEXTURE_2D, fBuffer.t);
+		
+		// ビュー×プロジェクション座標変換行列(正射影)
+		m.lookAt([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1, 0], vMatrix);
+		m.ortho(-1.0, 1.0, 1.0, -1.0, 0.1, 1, pMatrix);
+		m.multiply(pMatrix, vMatrix, tmpMatrix);
+		
+		// 板ポリゴンをレンダリング
+		m.identity(mMatrix);
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		gl.uniformMatrix4fv(bUniLocation[0], false, mvpMatrix);
+		gl.uniform1i(bUniLocation[1], 0);
+		gl.uniform1i(bUniLocation[2], useBlur);
+
+gl.uniform1f(bUniLocation[3], time+tempTime);
+//gl.uniform2fv(bUniLocation[4], [mx, my]);
+gl.uniform2fv(bUniLocation[5], [wid, hei]);
+
+		gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
+
+
+//もう１つのモデル（地球）描画ーーーーーーーーーーーーーーーーーーーーーーーーーー
+// プログラムオブジェクトの有効化(シェーダの選択)
+	   gl.useProgram(prg);
+
+// 地球用のVBOとIBOをセット
+		set_attribute(eVBOList, attLocation, attStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, eIndex);
+
+// 球体をレンダリング
+		
+gl.bindTexture(gl.TEXTURE_2D, texture0);
+		m.identity(mMatrix);
+m.scale(mMatrix, [0.3, 0.3, 0.3], mMatrix);		
+m.translate(mMatrix, [1.2, 1.5, 1.2], mMatrix);
+m.rotate(mMatrix, rad, [0, 1.0, 0], mMatrix);
+
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		m.inverse(mMatrix, invMatrix);
+		gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+		gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+		gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+		gl.uniform3fv(uniLocation[3], lightDirection);
+		gl.uniform1i(uniLocation[4],false);//false
+		gl.uniform1i(uniLocation[5], 0);
+gl.uniform1f(uniLocation[6], 1.0);
+
+//gl.uniform1f(uniLocation[7], time + tempTime);
+//gl.uniform2fv(uniLocation[8], [mx, my]);
+//gl.uniform2fv(uniLocation[9], [wid, hei]);
+
+gl.uniform1f(uniLocation[10], false);
+//gl.uniform1f(uniLocation[11],time+tempTime);
+//gl.uniform1f(uniLocation[12],1.0);//pointsize
+
+		gl.drawElements(gl.TRIANGLES, earthData.i.length, gl.UNSIGNED_SHORT, 0);
+            
+//ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+		
+		// コンテキストの再描画
+		gl.flush();
+		
+		// ループのために再帰呼び出し
+		setTimeout(arguments.callee, 1000 / 30);//30
+	})();
+	
+	// シェーダを生成する関数
+	function create_shader(id){
+		// シェーダを格納する変数
+		var shader;
+		
+		// HTMLからscriptタグへの参照を取得
+		var scriptElement = document.getElementById(id);
+		
+		// scriptタグが存在しない場合は抜ける
+		if(!scriptElement){return;}
+		
+		// scriptタグのtype属性をチェック
+		switch(scriptElement.type){
+			
+			// 頂点シェーダの場合
+			case 'x-shader/x-vertex':
+				shader = gl.createShader(gl.VERTEX_SHADER);
+				break;
+				
+			// フラグメントシェーダの場合
+			case 'x-shader/x-fragment':
+				shader = gl.createShader(gl.FRAGMENT_SHADER);
+				break;
+			default :
+				return;
+		}
+		
+		// 生成されたシェーダにソースを割り当てる
+		gl.shaderSource(shader, scriptElement.text);
+		
+		// シェーダをコンパイルする
+		gl.compileShader(shader);
+		
+		// シェーダが正しくコンパイルされたかチェック
+		if(gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
+			
+			// 成功していたらシェーダを返して終了
+			return shader;
+		}else{
+			
+			// 失敗していたらエラーログをアラートする
+			alert(gl.getShaderInfoLog(shader));
+		}
+	}
+	
+	// プログラムオブジェクトを生成しシェーダをリンクする関数
+	function create_program(vs, fs){
+		// プログラムオブジェクトの生成
+		var program = gl.createProgram();
+		
+		// プログラムオブジェクトにシェーダを割り当てる
+		gl.attachShader(program, vs);
+		gl.attachShader(program, fs);
+		
+		// シェーダをリンク
+		gl.linkProgram(program);
+		
+		// シェーダのリンクが正しく行なわれたかチェック
+		if(gl.getProgramParameter(program, gl.LINK_STATUS)){
+		
+			// 成功していたらプログラムオブジェクトを有効にする
+			gl.useProgram(program);
+			
+			// プログラムオブジェクトを返して終了
+			return program;
+		}else{
+			
+			// 失敗していたらエラーログをアラートする
+			alert(gl.getProgramInfoLog(program));
+		}
+	}
+	
+	// VBOを生成する関数
+	function create_vbo(data){
+		// バッファオブジェクトの生成
+		var vbo = gl.createBuffer();
+		
+		// バッファをバインドする
+		gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+		
+		// バッファにデータをセット
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+		
+		// バッファのバインドを無効化
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+		
+		// 生成した VBO を返して終了
+		return vbo;
+	}
+	
+	// VBOをバインドし登録する関数
+	function set_attribute(vbo, attL, attS){
+		// 引数として受け取った配列を処理する
+		for(var i in vbo){
+			// バッファをバインドする
+			gl.bindBuffer(gl.ARRAY_BUFFER, vbo[i]);
+			
+			// attributeLocationを有効にする
+			gl.enableVertexAttribArray(attL[i]);
+			
+			// attributeLocationを通知し登録する
+			gl.vertexAttribPointer(attL[i], attS[i], gl.FLOAT, false, 0, 0);
+		}
+	}
+	
+	// IBOを生成する関数
+	function create_ibo(data){
+		// バッファオブジェクトの生成
+		var ibo = gl.createBuffer();
+		
+		// バッファをバインドする
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+		
+		// バッファにデータをセット
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(data), gl.STATIC_DRAW);
+		
+		// バッファのバインドを無効化
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+		
+		// 生成したIBOを返して終了
+		return ibo;
+	}
+	
+	// テクスチャを生成する関数
+	function create_texture(source, number){
+		// イメージオブジェクトの生成
+		var img = new Image();
+		
+		// データのオンロードをトリガーにする
+		img.onload = function(){
+			// テクスチャオブジェクトの生成
+			var tex = gl.createTexture();
+			
+			// テクスチャをバインドする
+			gl.bindTexture(gl.TEXTURE_2D, tex);
+			
+			// テクスチャへイメージを適用
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+			
+			// ミップマップを生成
+			gl.generateMipmap(gl.TEXTURE_2D);
+			
+			// テクスチャパラメータの設定
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+			
+			switch(number){
+				case 0:
+					texture0 = tex;
+					break;
+				case 1:
+					//texture1 = tex;
+					break;
+				default:
+					break;
+			}
+			
+			// テクスチャのバインドを無効化
+			gl.bindTexture(gl.TEXTURE_2D, null);
+		};
+		
+		// イメージオブジェクトのソースを指定
+		img.src = source;
+	}
+	
+	// フレームバッファをオブジェクトとして生成する関数
+	function create_framebuffer(width, height){
+		// フレームバッファの生成
+		var frameBuffer = gl.createFramebuffer();
+		
+		// フレームバッファをWebGLにバインド
+		gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+		
+		// 深度バッファ用レンダーバッファの生成とバインド
+		var depthRenderBuffer = gl.createRenderbuffer();
+		gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+		
+		// レンダーバッファを深度バッファとして設定
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+		
+		// フレームバッファにレンダーバッファを関連付ける
+		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
+		
+		// フレームバッファ用テクスチャの生成
+		var fTexture = gl.createTexture();
+		
+		// フレームバッファ用のテクスチャをバインド
+		gl.bindTexture(gl.TEXTURE_2D, fTexture);
+		
+		// フレームバッファ用のテクスチャにカラー用のメモリ領域を確保
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		
+		// テクスチャパラメータ
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		
+		// フレームバッファにテクスチャを関連付ける
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
+		
+		// 各種オブジェクトのバインドを解除
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		
+		// オブジェクトを返して終了
+		return {f : frameBuffer, d : depthRenderBuffer, t : fTexture};
+	}
+	
+};
+
+//平面
+function PlaneY(color){
+
+          //var col = new Array();
+
+// 頂点の位置
+    var pos = [
+        -1.0,  1.0,  0.0,
+         1.0,  1.0,  0.0,
+        -1.0, -1.0,  0.0,
+         1.0, -1.0,  0.0
+    ];
+    
+    // 頂点色
+
+    var col = [
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0
+    ];
+    var nor=[
+        -1.0,  1.0,  0.0,
+         1.0,  1.0,  0.0,
+        -1.0, -1.0,  0.0,
+         1.0, -1.0,  0.0
+     ];
+   
+    // テクスチャ座標
+    var st = [
+        0.0, 0.0,
+        1.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0
+    ];
+    
+    // 頂点インデックス
+    var idx = [
+        0, 1, 2,
+        3, 2, 1
+    ];
+
+     return {p : pos, n : nor, c : col, t : st, i : idx};
+     
+    }
+
+function MakeDot1(numParticles,color){
+      var pos = new Array(), nor = new Array(),
+       col = new Array(), st  = new Array(), idx = new Array(),
+       lifetime=new Array(),shift=new Array();
+
+for(var i = 0 ; i < 0 ; i++) {
+        var px = (Math.random()-0.5)*5.0;
+        var py = (Math.random()-0.5)*5.0;
+        var pz = (Math.random()-0.5)*1.0;
+        
+        pos.push(px,py,pz);
+ 
+        // 追加の頂点情報を初期化
+        nor.push(1.0, 1.0, 1.0);
+     if(color){
+        var tc=color;
+         }else{
+         var tc = hsva(360/6 * i, 1, 1, 1);
+         }
+
+	st.push(px,py);
+        col.push(tc[0], tc[1], tc[2], tc[3]);
+        lifetime.push(3 + Math.random());
+        shift.push(Math.random());
+      }
+
+   return {p : pos, n : nor, c : col, t : st, i : idx,l:lifetime,sh:shift};
+}
+
+// コードの元サイト：
+//http://northpole382.blog.fc2.com/blog-entry-641.html
+</script>
+
+</head>
+<body>
+<canvas id="sample" width="256" height="256">
+</canvas>
+<img src="earth128.gif" style="display: none;">
+</body>
+</html>
