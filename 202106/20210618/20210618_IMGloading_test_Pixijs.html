@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+    <style>
+canvas{
+  width: 300px;
+  height: 300px;
+}
+      </style>
+    <canvas id="canvas"></canvas>
+  </body>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
+  <script>
+    // 参考：
+    // https://liginc.co.jp/398188
+    // https://prog-8.com/docs/github-pages
+
+//------画像のアニメーション-----//
+// 表示するcanvasを用意
+let app = new PIXI.Application(800, 600, {backgroundColor : 0xDAE8F4});
+document.body.appendChild(app.view);
+
+// イメージを指定
+//let hayachi = PIXI.Sprite.fromImage('http://hayachi.github.io/images/hayachi-blue.png');
+let hayachi = PIXI.Sprite.fromImage('https://k-tsuda400.github.io/images/20210618.png');
+
+// 画像のアンカーポイントの指定
+hayachi.anchor.set(0.5);
+
+// 画像を画面中央に移動
+hayachi.x = app.screen.width / 2;
+hayachi.y = app.screen.height / 2.5;
+
+// ステージに表示させる
+app.stage.addChild(hayachi);
+
+// アニメーションの再生、ループ
+let i = 0;
+app.ticker.add(function(delta) {
+    // 画像を回転
+    i += 1;
+    hayachi.rotation += changeSpeed(i) * delta;
+    if(i > 1000) i = 0;
+});
+
+function changeSpeed(x){
+  let speed;
+  if (x < 500)speed = (x % 1000) / 2000.0;
+  else speed = ((1000 - x) % 1000) / 2000.0;
+  
+  return speed;
+}
+
+//------テキストの描画-----//
+
+// スタイルを指定
+let styleBig = new PIXI.TextStyle({
+    fontFamily: 'Comfortaa',
+    fontSize: 70,
+    align: 'center',
+    wordWrapWidth: 1000,
+    wordWrap: true
+});
+let styleSmall =  new PIXI.TextStyle({
+    fontFamily: 'cursive',
+    fontSize: 40,
+    align: 'center',
+    wordWrapWidth: 1000,
+    wordWrap: true
+});
+
+// スタイルを反映
+let textBig = new PIXI.Text('🤩🤩🤩', styleBig);
+let textSmall = new PIXI.Text('Kawaii Star Face🤩', styleSmall);
+
+// テキストの位置を指定
+textBig.x = 250;
+textBig.y = 430;
+textSmall.x = 180;
+textSmall.y = 530;
+
+// ステージに表示させる
+app.stage.addChild(textBig);
+app.stage.addChild(textSmall);
+  </script>
+</html>
