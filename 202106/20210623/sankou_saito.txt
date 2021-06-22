@@ -1,0 +1,2 @@
+コード元：
+https://github.com/ics-creative/151124_createjs_waves/blob/master/examples/0_bg.html
