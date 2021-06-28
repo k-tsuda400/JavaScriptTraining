@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>アニメーション</title>
+</head>
+<style>
+  .upButton{
+    margin-left : 25px ;
+  }
+  .downButton{
+    margin-left : 20px ;
+  }
+  </style>
+
+<body>
+  <div>
+    <div class="upButton"><button class="btn btn-primary" onclick="up(event)">Up</button></div>
+    <button class="btn btn-primary" onclick="left(event)">Left</button>
+    <button class="btn btn-primary" onclick="right(event)">Right</button><br>
+    <div class="downButton"><button class="btn btn-primary" onclick="down(event)">Down</button></div>
+  </div>
+  <div id="game"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.2.1/pixi.min.js" integrity="sha256-LzClwveZCCIyst3+wITowZNFFwZnm5NZKeNUkSmuAEI=" crossorigin="anonymous"></script>
+  <script type="text/javascript">
+// 参考：
+// https://memo.appri.me/programming/pixijs-sample-05
+  // pixiアプリケーションのインスタンスを生成
+  const pixiApp = new PIXI.Application({
+    width: 512,
+    height: 512,
+    antialiasing: true,
+    transparent: false,
+    resolution: 1
+  });
+
+  let gameScene; // ゲームシーン
+  let dungeon; // ダンジョン背景
+  let anim1; // キャラアイコン
+
+  // #game要素にpixiApp.view追加
+  document.querySelector("#game").appendChild(pixiApp.view);
+
+  PIXI.Loader.shared
+    // リソースを登録
+    // 第一引数は任意のキー、第二引数は実体パス
+    //.add("chara-1", "https://i.imgur.com/JNGbC6F.png")
+    //.add("chara-2", "https://i.imgur.com/H9smyaD.png")
+    //.add("chara-3", "https://i.imgur.com/xT6FStW.png")
+    .add("chara-1", "https://k-tsuda400.github.io/images/20210628/anim11.png")
+    .add("chara-2", "https://k-tsuda400.github.io/images/20210628/anim22.png")
+    .add("chara-3", "https://k-tsuda400.github.io/images/20210628/anim33.png")
+    .add("dungeon", "https://k-tsuda400.github.io/images/20210628/map.png")
+    .load(setup);
+
+  //This `setup` function will run when the image has loaded
+  function setup(loader, res) {
+    // ゲームシーンを作成
+    gameScene = new PIXI.Container();
+    pixiApp.stage.addChild(gameScene);
+
+    // ダンジョン作成(ここで画面の大枠サイズを確定)
+    dungeon = new PIXI.Sprite(PIXI.utils.TextureCache["dungeon"]);
+    gameScene.addChild(dungeon);
+    // アニメーションを作成してシーンに追加
+    anim1 = createAnim([
+      "chara-1", // chara-1
+      "chara-2", // chara-2
+      "chara-3", // chara-3
+    ]);
+    anim1.x = (gameScene.width / 2)
+    anim1.y = (gameScene.height / 2)
+    anim1.vx = 0;
+    anim1.vy = 0;
+    anim1.play();
+    gameScene.addChild(anim1);
+  }
+
+  /**
+   * アニメーションスプライトオブジェクトを作成
+   * @param  {Array<String>} imgs - imageパスの配列
+   * @param  {Object} opts - [OPTIONAL] オプション @see PIXI.extras.AnimatedSprite
+   * @return {AnimatedSprite}
+   */
+  function createAnim(imgs, opts) {
+    const textureArray = [];
+    for (let i = 0; i < imgs.length; i++) {
+      let texture = PIXI.Texture.from(imgs[i]);
+      textureArray.push(texture);
+    };
+    const animatedSprite = new PIXI.AnimatedSprite(textureArray);
+    animatedSprite.animationSpeed = (opts && opts.animationSpeed) ? opts.animationSpeed : 0.1;
+    return animatedSprite;
+  }
+
+  /** anim1再生 */
+  function up(e) {
+    //anim1.play();
+    if (anim1.y > 32){
+      anim1.y -= 32;
+    }
+  }
+  function down(e) {
+    //anim1.play();
+    if (anim1.y < 448){
+      anim1.y += 32;
+    }
+  }
+  function left(e) {
+    //anim1.play();
+    if (anim1.x > 32){
+      anim1.x -= 32;
+    }
+  }
+  function right(e) {
+    //anim1.play();
+    if (anim1.x < 448){
+      anim1.x += 32;
+    }
+  }
+  
+  </script>
+</body>
+
+</html>
