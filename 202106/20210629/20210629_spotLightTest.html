@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js"></script>
+    <script>
+      // Three.jsでシャドーの実行（スポットライト版）
+      // 参考サイト：
+      // https://ics.media/tutorial-three/light_shadowmap/
+
+      // ページの読み込みを待つ
+      window.addEventListener('load', init);
+
+      function init() {
+        // サイズを指定
+        const width = 512;
+        const height = 384;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector('#myCanvas20210627'),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // レンダラー：シャドウを有効にする
+        renderer.shadowMap.enabled = true;
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(20, 40, 80);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        // 床を作成
+        const meshFloor = new THREE.Mesh(
+          new THREE.BoxGeometry(2000, 0.1, 2000),
+          new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 1.0 })
+        );
+        // 影を受け付ける
+        meshFloor.receiveShadow = true;
+        scene.add(meshFloor);
+
+        // オブジェクトを作成
+        const meshKnot = new THREE.Mesh(
+          new THREE.BoxGeometry( 5, 5, 5 ),
+          new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 1.0 })
+        );
+        meshKnot.position.set(0, 2.5, 0);
+        // 影を落とす
+        meshKnot.castShadow = true;
+        scene.add(meshKnot);
+
+        // 照明を作成
+        // 平行光源を作成
+        // new THREE.DirectionalLight(色, 光の強さ)
+        const light = new THREE.SpotLight(0xFF0000, 5, 150, Math.PI / 8, 0.1);
+        scene.add(light);
+
+        const lightG = new THREE.SpotLight(0x00FF00, 5, 150, Math.PI / 8, 0.1);
+        scene.add(lightG);
+
+        const lightB = new THREE.SpotLight(0x0000FF, 5, 150, Math.PI / 8, 0.1);
+        scene.add(lightB);
+
+        // ライトに影を有効にする
+        light.castShadow = true;
+        lightG.castShadow = true;
+        lightB.castShadow = true;
+
+        // ここでシャドーマップの大きさを指定する。
+        // もし影が一部欠けるなら、ここのサイズを全体的に広げる。
+        light.shadow.camera.left   = -20;
+        light.shadow.camera.right  = 20;
+        light.shadow.camera.top    = 20;
+        light.shadow.camera.bottom = -20;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+
+        lightG.shadow.camera.left   = -20;
+        lightG.shadow.camera.right  = 20;
+        lightG.shadow.camera.top    = 20;
+        lightG.shadow.camera.bottom = -20;
+        lightG.shadow.mapSize.width = 2048;
+        lightG.shadow.mapSize.height = 2048;
+
+        lightB.shadow.camera.left   = -20;
+        lightB.shadow.camera.right  = 20;
+        lightB.shadow.camera.top    = 20;
+        lightB.shadow.camera.bottom = -20;
+        lightB.shadow.mapSize.width = 2048;
+        lightB.shadow.mapSize.height = 2048;
+
+        scene.add(light);
+        scene.add(lightG);
+        scene.add(lightB);
+
+        // カメラヘルパーで領域を可視化できる。
+        
+        //let cameraHelper = new THREE.CameraHelper(light.shadow.camera);
+        //let cameraHelperG = new THREE.CameraHelper(lightG.shadow.camera);
+        //scene.add(cameraHelper);
+        //scene.add(cameraHelperG);
+
+        tick();
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 照明の位置を更新
+          const t = Date.now() / 500;
+          const r = 30.0;
+          let lx = r * Math.cos(t);
+          let lz = r * Math.sin(t);
+          let ly = 20.0 + 5.0 * Math.sin(t / 3.0);
+          light.position.set(lx, ly, lz);
+
+          lx = r * Math.cos(t + (Math.PI * 2) / 3);
+          lz = r * Math.sin(t + (Math.PI * 2) / 3);
+          lightG.position.set(lx, ly, lz);
+
+          lx = r * Math.cos(t + (Math.PI * 4) / 3);
+          lz = r * Math.sin(t + (Math.PI * 4) / 3);
+          lightB.position.set(lx, ly, lz);
+
+          requestAnimationFrame(tick);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas20210627"></canvas>
+  </body>
+</html>
