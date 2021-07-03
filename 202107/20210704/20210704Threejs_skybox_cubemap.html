@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js"></script>
+    <script>
+      // Three.jsで物体にテキスチャを適用する
+      // 参考サイト：
+      // https://github.com/stemkoski/stemkoski.github.com/blob/master/Three.js/Textures.html
+      // （↑のサイトは、ややプログラムが古いので、以下のサイトを参考に一部修正した）
+      // https://threejsfundamentals.org/threejs/lessons/ja/threejs-textures.html
+
+      // ページの読み込みを待つ
+      window.addEventListener('load', init);
+
+      function init() {
+        // サイズを指定
+        const width = 512;
+        const height = 384;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector('#myCanvas20210704'),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // レンダラー：シャドウを有効にする
+        renderer.shadowMap.enabled = true;
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(0, 0, 80);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        // 床を作成
+        const meshFloor = new THREE.Mesh(
+          new THREE.BoxGeometry(2000, 0.1, 2000),
+          new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 1.0 })
+        );
+        // 影を受け付ける
+        meshFloor.receiveShadow = true;
+        //scene.add(meshFloor);
+
+        // 照明を作成
+        // 平行光源を作成
+        // new THREE.DirectionalLight(色, 光の強さ)
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        scene.add(light);
+
+        // ライトに影を有効にする
+        light.castShadow = true;
+
+        // ここでシャドーマップの大きさを指定する。
+        // もし影が一部欠けるなら、ここのサイズを全体的に広げる。
+        light.shadow.camera.left   = -500;
+        light.shadow.camera.right  = 500;
+        light.shadow.camera.top    = 500;
+        light.shadow.camera.bottom = -500;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        scene.add(light);
+
+        // ここで空を追加
+        var imgPath = 'https://k-tsuda400.github.io/images/20210703/';
+        var urls = [
+        imgPath+'clouds1_east.bmp',
+        imgPath+'clouds1_west.bmp',
+        imgPath+'clouds1_up.bmp',
+        imgPath+'clouds1_down.bmp',
+        imgPath+'clouds1_north.bmp',
+        imgPath+'clouds1_south.bmp'
+        ];
+
+        //読み込み後に処理する場合
+        /*
+        var cubeLoader = new THREE.CubeTextureLoader();
+        cubeLoader.mapping = THREE.CubeReflectionMapping;
+        cubeLoader.load( urls, function( cubeTexture){
+          var geometry = new THREE.SphereGeometry( 5, 32, 32);
+        var material = new THREE.MeshBasicMaterial({
+        	color: 0xCCCCCC,
+        	envMap: cubeTexture,
+        	reflectivity: 0.9
+        });
+        });
+        */
+
+        // こっちのコードの方が読みやすい
+        // 参考：https://www.pentacreation.com/blog/2018/12/181215.html
+        const loader = new THREE.CubeTextureLoader();
+        const Cubetexture = loader.load(urls);
+ 
+        //Cubetexture.mapping = THREE.CubeReflectionMapping;
+ 
+        //geometry = new THREE.SphereGeometry(10.25,64,64);
+        geometry = new THREE.BoxGeometry(30,30,30);
+        
+        material = new THREE.MeshBasicMaterial({
+          envMap:Cubetexture,
+          //color: 0xFFFFFF,
+          reflectivity: 1.0
+        });
+
+        mesh = new THREE.Mesh( geometry, material);
+
+        mesh.position.set(0, 0, 0);
+        scene.add(mesh);
+
+        // SkyBoxを作成
+        var light2 = new THREE.AmbientLight(0xffffff);
+        scene.add(light2);
+
+        const skySize = 100;
+        geoSky = new THREE.BoxGeometry(skySize,skySize,skySize);
+        
+        matSky = new THREE.MeshBasicMaterial({
+          envMap:Cubetexture,
+          //color: 0xFFFFFF,
+          reflectivity: 1.0,
+          //裏面を描画
+          side: THREE.BackSide
+        });
+
+
+        meshSky = new THREE.Mesh( geoSky, matSky);
+
+        meshSky.position.set(0, 0, 0);
+        //scene.add(meshSky);
+
+        // 色々試した結果、箱に描画するよりも、scene.backgroundに書くのが良いという結論になった
+        // これはSkyBoxと言えるか？
+        // 参考：https://stackoverflow.com/questions/59454931/three-js-r111-three-shaderlib-cube-uniforms-tcube-to-envmap-issue
+        scene.background = Cubetexture;
+
+        tick();
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 照明の位置を更新
+          const t = Date.now() / 500;
+          const r = 1.0;
+          const lx = r * Math.cos(t);
+          const ly = 0;
+          const lz = r * Math.sin(t);
+          mesh.rotation.set(lx, ly, lz);
+
+          requestAnimationFrame(tick);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas20210704"></canvas>
+  </body>
+</html>
