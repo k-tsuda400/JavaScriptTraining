@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>アニメーション</title>
+</head>
+<style>
+  .upButton{
+    margin-left : 25px ;
+  }
+  .downButton{
+    margin-left : 20px ;
+  }
+  </style>
+
+<body>
+  <div id="game"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.2.1/pixi.min.js" integrity="sha256-LzClwveZCCIyst3+wITowZNFFwZnm5NZKeNUkSmuAEI=" crossorigin="anonymous"></script>
+  <script type="text/javascript">
+// 参考：
+// https://memo.appri.me/programming/pixijs-sample-05
+  // pixiアプリケーションのインスタンスを生成
+  const pixiApp = new PIXI.Application({
+    width: 640,
+    height: 480,
+    antialiasing: true,
+    transparent: false,
+    resolution: 1
+  });
+
+  let gameScene; // ゲームシーン
+  let anim1; // キャラアイコン
+
+  // #game要素にpixiApp.view追加
+  document.querySelector("#game").appendChild(pixiApp.view);
+
+  PIXI.Loader.shared
+    // リソースを登録
+    // 第一引数は任意のキー、第二引数は実体パス
+    //.add("chara-1", "https://i.imgur.com/JNGbC6F.png")
+    //.add("chara-2", "https://i.imgur.com/H9smyaD.png")
+    //.add("chara-3", "https://i.imgur.com/xT6FStW.png")
+    .add("chara-1", "https://k-tsuda400.github.io/images/20210705/anim1.png")
+    .add("chara-2", "https://k-tsuda400.github.io/images/20210705/anim2.png")
+    .add("chara-3", "https://k-tsuda400.github.io/images/20210705/anim3.png")
+    .add("chara-4", "https://k-tsuda400.github.io/images/20210705/anim4.png")
+    .add("chara-5", "https://k-tsuda400.github.io/images/20210705/anim5.png")
+    .add("chara-6", "https://k-tsuda400.github.io/images/20210705/anim6.png")
+    .add("chara-7", "https://k-tsuda400.github.io/images/20210705/anim7.png")
+    .load(setup);
+    // 今後の課題：アニメーション再生速度を、セットアップ後に変更するには
+    // どうすればよいか
+
+  //This `setup` function will run when the image has loaded
+  function setup(loader, res) {
+    // ゲームシーンを作成
+    gameScene = new PIXI.Container();
+    pixiApp.stage.addChild(gameScene);
+
+    // アニメーションを作成してシーンに追加
+    anim1 = createAnim([
+      "chara-1", // chara-1
+      "chara-2", // chara-2
+      "chara-3", // chara-3
+      "chara-4", // chara-4
+      "chara-5", // chara-5
+      "chara-6", // chara-6
+      "chara-7", // chara-7
+    ]);
+    anim1.x = (gameScene.width / 2)
+    anim1.y = (gameScene.height / 2)
+    anim1.vx = 0;
+    anim1.vy = 0;
+    anim1.play();
+    gameScene.addChild(anim1);
+  }
+
+  /**
+   * アニメーションスプライトオブジェクトを作成
+   * @param  {Array<String>} imgs - imageパスの配列
+   * @param  {Object} opts - [OPTIONAL] オプション @see PIXI.extras.AnimatedSprite
+   * @return {AnimatedSprite}
+   */
+  let frame = 0;
+  function createAnim(imgs, opts) {
+    frame++;
+    const textureArray = [];
+    for (let i = 0; i < imgs.length; i++) {
+      let texture = PIXI.Texture.from(imgs[i]);
+      textureArray.push(texture);
+    };
+    const animatedSprite = new PIXI.AnimatedSprite(textureArray);
+
+    let animSpeedValue = 0.2;
+
+    // アニメスピードをここで指定
+    animatedSprite.animationSpeed = (opts && opts.animationSpeed) ? opts.animationSpeed : animSpeedValue;
+    return animatedSprite;
+  }
+  
+  </script>
+</body>
+
+</html>
