@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js"></script>
+    <script>
+      // Three.jsでビルボードの描画
+      // 参考：https://ics.media/entry/13973/
+
+      // ページの読み込みを待つ
+      window.addEventListener('load', init);
+
+      function init() {
+        // サイズを指定
+        const width = 512;
+        const height = 384;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector('#myCanvas20210627'),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // レンダラー：シャドウを有効にする
+        renderer.shadowMap.enabled = true;
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(30, 20, 0);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        // 床を作成
+        const meshFloor = new THREE.Mesh(
+          new THREE.BoxGeometry(2000, 0.1, 2000),
+          new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 1.0 })
+        );
+        // 影を受け付ける
+        meshFloor.receiveShadow = true;
+        scene.add(meshFloor);
+
+        // オブジェクトを作成
+
+        // ビルボード（カメラから見る角度か変わっても見え方が不変のオブジェクト）
+        const loader = new THREE.TextureLoader();
+        let map    = loader.load('https://k-tsuda400.github.io/images/20210628/anim11.png');
+
+        // マテリアル
+        let material = new THREE.SpriteMaterial({
+          map        : map,
+          color      : 0xffffff,
+          blending   : THREE.AdditiveBlending,
+          opacity    : 0.99,
+          transparent: true
+        });
+
+        let sprite = new THREE.Sprite(material);
+        sprite.scale.multiplyScalar(9);
+        sprite.position.set(0, 6, 0);
+        scene.add(sprite);
+
+
+        // オブジェクトを作成
+        const meshCube = new THREE.Mesh(
+          new THREE.BoxGeometry( 5, 5, 5 ),
+          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.0 })
+        );
+        meshCube.position.set(15, 5, 0);
+        // 影を落とす
+        meshCube.castShadow = true;
+        scene.add(meshCube);
+
+        // 照明を作成
+        // 平行光源を作成
+        // new THREE.DirectionalLight(色, 光の強さ)
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        scene.add(light);
+
+        // ライトに影を有効にする
+        light.castShadow = true;
+
+        // ここでシャドーマップの大きさを指定する。
+        // もし影が一部欠けるなら、ここのサイズを全体的に広げる。
+        light.shadow.camera.left   = -500;
+        light.shadow.camera.right  = 500;
+        light.shadow.camera.top    = 500;
+        light.shadow.camera.bottom = -500;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
+        scene.add(light);
+
+        // カメラヘルパーで領域を可視化できる。
+        //let cameraHelper = new THREE.CameraHelper(light.shadow.camera);
+        //scene.add(cameraHelper);
+
+        tick();
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 照明の位置を更新
+          const t = Date.now() / 500;
+          const r = 32.0;
+          const lx = r * Math.cos(t);
+          const lz = r * Math.sin(t);
+          const ly = 20.0 + 5.0 * Math.sin(t / 3.0);
+          camera.position.set(lx, 10, lz);
+          camera.lookAt(new THREE.Vector3(0, 0, 0));
+          light.position.set(-lx, ly, lz);
+
+          requestAnimationFrame(tick);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas20210627"></canvas>
+  </body>
+</html>
