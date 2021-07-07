@@ -1,0 +1,174 @@
+<html>
+<!-- Three.js r106 --><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/106/three.js"></script>
+<!-- TrackballControls.js --><script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r106/examples/js/controls/TrackballControls.js"></script>
+<!-- OimoPhysics.js v1.2.0 --><script src="https://cdn.jsdelivr.net/gh/saharan/OimoPhysics@1.2.0/bin/js/OimoPhysics.js"></script>
+<body>
+<script>
+// OimoPhysics(http://el-ement.com/blog/2018/01/13/oimophysics-released/)で3Dの物理エンジン描画
+// コードの大本参考：https://qiita.com/yamazaki3104/items/797b28bba833c06f5f25
+class THREEJS
+{
+    constructor()
+    {
+        const w = document.body.clientWidth
+        const h = document.body.clientHeight
+
+        this.renderer = new THREE.WebGLRenderer()
+        // 背景の色をセット
+        this.renderer.setClearColor( 0x999999 )
+        this.renderer.setSize( w, h )
+
+        this.camera = new THREE.PerspectiveCamera( 40, w / h, 0.1, 1000 )
+        this.camera.position.x =  0
+        this.camera.position.y = 40
+        this.camera.position.z = 30
+        this.trackball = new THREE.TrackballControls( this.camera )
+
+        this.scene = new THREE.Scene()
+
+        let directionalLight = new THREE.DirectionalLight( 0xffffff, 1 )
+        directionalLight.position.set( 0.2, 0.5, 0.3 )
+        this.scene.add( directionalLight )
+
+        document.body.appendChild( this.renderer.domElement )
+    }
+
+    add_mesh( _arg )
+    {
+        let mesh = new THREE.Mesh(
+            new THREE.BoxGeometry( _arg.w, _arg.h, _arg.d ),
+            new THREE.MeshLambertMaterial( { color: _arg.color } )
+        )
+        mesh.oimo_rigid_body = _arg.body
+        this.scene.add( mesh )
+    }
+
+    render()
+    {
+        for ( let mesh of this.scene.children )
+        {
+            if ( ! mesh.oimo_rigid_body ) continue
+
+            const pos = mesh.oimo_rigid_body.getPosition()
+            mesh.position.x = pos.x
+            mesh.position.y = pos.y
+            mesh.position.z = pos.z
+
+            const ori = mesh.oimo_rigid_body.getOrientation()
+            mesh.quaternion.x = ori.x
+            mesh.quaternion.y = ori.y
+            mesh.quaternion.z = ori.z
+            mesh.quaternion.w = ori.w
+        }
+
+        this.trackball.update()
+        this.renderer.render( this.scene, this.camera )
+    }
+}
+
+class OIMO_PHYSICS
+{
+    constructor( _threejs )
+    {
+        this.oimo_world = new OIMO.World()
+        // 重力を与える
+        this.oimo_world.gravity = new OIMO.Vec3( 0, -9.80665, 0 )
+
+        // 地面を作成
+        let ground_cnf      = new OIMO.RigidBodyConfig()
+        ground_cnf.type     = OIMO.RigidBodyType.STATIC    // DYNAMIC, KINEMATIC, STATIC
+        ground_cnf.position = new OIMO.Vec3( 0, -0.2, 0 )
+        let rigid_body = new OIMO.RigidBody( ground_cnf )
+
+        let ground_shape_cnf = new OIMO.ShapeConfig()
+        ground_shape_cnf.geometry = new OIMO.BoxGeometry( new OIMO.Vec3( 25, 0.2, 25 ) )
+        rigid_body.addShape( new OIMO.Shape( ground_shape_cnf ) )
+
+        this.oimo_world.addRigidBody( rigid_body )
+
+        this.threejs = _threejs
+        // ここの引数で、地面の色を指定
+        this.threejs.add_mesh( { body: rigid_body, w: 25*2, h: 0.2*2, d: 25*2, color: 0x111111 } )
+    }
+
+    create_rigid_body( _arg )
+    {
+        let body_cnf = new OIMO.RigidBodyConfig()
+        body_cnf.type= OIMO.RigidBodyType.DYNAMIC // DYNAMIC, KINEMATIC, STATIC
+        body_cnf.position = new OIMO.Vec3( _arg.x, _arg.y, _arg.z )
+        let rigid_body = new OIMO.RigidBody( body_cnf )
+
+        let shape_cnf = new OIMO.ShapeConfig()
+        shape_cnf.geometry = new OIMO.BoxGeometry( new OIMO.Vec3( _arg.w / 2, _arg.h / 2, _arg.d / 2 ) )
+        rigid_body.addShape( new OIMO.Shape( shape_cnf ) )
+
+        this.oimo_world.addRigidBody( rigid_body )
+
+        this.threejs.add_mesh( { body: rigid_body, w: _arg.w, h: _arg.h, d: _arg.d, color: _arg.color } )
+
+        return rigid_body
+    }
+
+    render( _sec )
+    {
+        this.oimo_world.step( _sec )
+        this.threejs.render()
+    }
+}
+
+// MAIN
+let oimo_p = new OIMO_PHYSICS( new THREEJS() )
+
+// ドミノは合計で(16x16)個
+const dataSet = [
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,
+    0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,
+    0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+]
+
+const box_size = 1.5
+// ドミノを作るfor文
+for ( let y=0 ; y<16; y++ ) {
+    for ( let x=0 ; x<16; x++ ) {
+        oimo_p.create_rigid_body( {
+            // x, y, zはドミノの座標
+            x: (x-7) * box_size * 0.92, y: box_size * 0.5, z: (y-7) * box_size * 1.2,
+            // wはドミノの分厚さ
+            w: box_size*0.2, h: box_size*1, d: box_size*1,
+            color: [ 0xFFFFFF, 0x000000 ][ dataSet[ y * 16 + x ] ],
+        })
+    }
+}
+
+// 左から落とす、ドミノを一斉に倒す用の立方体
+for ( let i=0 ; i<16; i++ ) {
+    oimo_p.create_rigid_body({
+        x: -7 * box_size, y: box_size * 3, z: (i-7) * box_size * 1.2,
+        w: box_size, h: box_size, d: box_size,
+        color: 0xeeeeee
+    })
+}
+
+function animate()
+{
+    oimo_p.render( 1 / 30 )
+    window.requestAnimationFrame( animate )
+}
+window.requestAnimationFrame( animate )
+
+</script>
+</body>
+</html>
