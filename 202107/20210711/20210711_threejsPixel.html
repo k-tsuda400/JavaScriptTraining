@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - effects - ascii</title>
+		<meta charset="utf-8">
+	</head>
+	<style>
+		</style>
+
+	<body>
+		<div id="threejs20210711"></div>
+
+		<script type="module">
+			// コード参考元：three.jsサンプルシーン（ASCII）
+			// https://threejs.org/examples/#webgl_effects_ascii
+			import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/build/three.module.js';
+            import {OrbitControls} from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/controls/OrbitControls.js';
+
+			//import { AsciiEffect } from 'https://gist.githubusercontent.com/cieplak/0f1f615b0f245cccbea34c15d8d09cb6/raw/97611c6b4a8b6b5a88cb3259389c6ae8602a08e5/AsciiEffect.js';
+
+			//---
+// 注：letなど宣言修飾子が無いとエラー
+// 宣言ここから=========
+let AsciiEffect = function ( renderer, charSet, options ) {
+
+// its fun to create one your own!
+
+charSet = ( charSet === undefined ) ? ' .:-=+*#%@' : charSet;
+
+// ' .,:;=|iI+hHOE#`$';
+// darker bolder character set from https://github.com/saw/Canvas-ASCII-Art/
+// ' .\'`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'.split('');
+
+if ( ! options ) options = {};
+
+// Some ASCII settings
+
+var bResolution = ! options[ 'resolution' ] ? 0.145 : options[ 'resolution' ]; // Higher for more details
+var iScale = ! options[ 'scale' ] ? 1 : options[ 'scale' ];
+var bColor = ! options[ 'color' ] ? true : options[ 'color' ]; // nice but slows down rendering!
+var bAlpha = ! options[ 'alpha' ] ? false : options[ 'alpha' ]; // Transparency
+var bBlock = ! options[ 'block' ] ? true : options[ 'block' ]; // blocked characters. like good O dos
+var bInvert = ! options[ 'invert' ] ? false : options[ 'invert' ]; // black is white, white is black
+
+var strResolution = 'high';
+
+var width, height;
+
+var domElement = document.createElement( 'div' );
+domElement.style.cursor = 'default';
+
+var oAscii = document.createElement( "table" );
+domElement.appendChild( oAscii );
+
+var iWidth, iHeight;
+var oImg;
+
+this.setSize = function ( w, h ) {
+
+	width = w;
+	height = h;
+
+	renderer.setSize( w, h );
+
+	initAsciiSize();
+
+};
+// 宣言ここまで=========
+
+
+this.render = function ( scene, camera ) {
+
+	renderer.render( scene, camera );
+	asciifyImage( renderer, oAscii );
+
+};
+
+this.domElement = domElement;
+
+
+// Throw in ascii library from http://www.nihilogic.dk/labs/jsascii/jsascii.js
+
+/*
+* jsAscii 0.1
+* Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
+* MIT License [http://www.nihilogic.dk/licenses/mit-license.txt]
+*/
+
+function initAsciiSize() {
+
+	// 解像度を下げる
+	// 例えば、fResolution = 0.5 ならば、ドット画面の解像度は半分になる
+	// iWidth, iHeightはドット画面の解像度を表す
+	iWidth = Math.round( width * fResolution );
+	iHeight = Math.round( height * fResolution );
+
+	oCanvas.width = iWidth;
+	oCanvas.height = iHeight;
+	// oCanvas.style.display = "none";
+	// oCanvas.style.width = iWidth;
+	// oCanvas.style.height = iHeight;
+
+	oImg = renderer.domElement;
+
+	/*
+	if ( oImg.style.backgroundColor ) {
+
+		oAscii.rows[ 0 ].cells[ 0 ].style.backgroundColor = oImg.style.backgroundColor;
+		oAscii.rows[ 0 ].cells[ 0 ].style.color = oImg.style.color;
+
+	}
+	*/
+
+	oAscii.cellSpacing = 0;
+	oAscii.cellPadding = 0;
+
+	var oStyle = oAscii.style;
+	oStyle.display = "inline";
+	oStyle.width = Math.round( iWidth / fResolution * iScale ) + "px";
+	oStyle.height = Math.round( iHeight / fResolution * iScale ) + "px";
+	oStyle.whiteSpace = "pre";
+	oStyle.margin = "0px";
+	oStyle.padding = "0px";
+	oStyle.letterSpacing = fLetterSpacing + "px";
+	oStyle.fontFamily = strFont;
+	oStyle.fontSize = fFontSize + "px";
+	oStyle.lineHeight = fLineHeight + "px";
+	oStyle.textAlign = "left";
+	oStyle.textDecoration = "none";
+
+}
+
+
+var aDefaultCharList = ( " .,:;i1tfLCG08@" ).split( "" );
+var aDefaultColorCharList = ( " CGO08@" ).split( "" );
+var strFont = "courier new, monospace";
+
+var oCanvasImg = renderer.domElement;
+
+// 内部でcanvas2dを呼び出してる
+var oCanvas = document.createElement( "canvas" );
+if ( ! oCanvas.getContext ) {
+
+	return;
+
+}
+
+var oCtx = oCanvas.getContext( "2d" );
+if ( ! oCtx.getImageData ) {
+
+	return;
+
+}
+
+var aCharList = ( bColor ? aDefaultColorCharList : aDefaultCharList );
+
+if ( charSet ) aCharList = charSet;
+
+var fResolution = 0.5;
+
+switch ( strResolution ) {
+
+	case "low" : 	fResolution = 0.25; break;
+	case "medium" : fResolution = 0.5; break;
+	case "high" : 	fResolution = 1; break;
+
+}
+
+if ( bResolution ) fResolution = bResolution;
+
+// Setup dom
+
+var fFontSize = ( 2 / fResolution ) * iScale;
+var fLineHeight = ( 2 / fResolution ) * iScale * 1.0;
+
+// adjust letter-spacing for all combinations of scale and resolution to get it to fit the image width.
+
+var fLetterSpacing = 0;
+
+if ( strResolution == "low" ) {
+
+	switch ( iScale ) {
+		case 1 : fLetterSpacing = - 1; break;
+		case 2 :
+		case 3 : fLetterSpacing = - 2.1; break;
+		case 4 : fLetterSpacing = - 3.1; break;
+		case 5 : fLetterSpacing = - 4.15; break;
+	}
+
+}
+
+if ( strResolution == "medium" ) {
+
+	switch ( iScale ) {
+		case 1 : fLetterSpacing = 0; break;
+		case 2 : fLetterSpacing = - 1; break;
+		case 3 : fLetterSpacing = - 1.04; break;
+		case 4 :
+		case 5 : fLetterSpacing = - 2.1; break;
+	}
+
+}
+
+if ( strResolution == "high" ) {
+
+	switch ( iScale ) {
+		case 1 :
+		case 2 : fLetterSpacing = 0; break;
+		case 3 :
+		case 4 :
+		case 5 : fLetterSpacing = - 1; break;
+	}
+
+}
+
+
+// can't get a span or div to flow like an img element, but a table works?
+
+
+// convert img element to ascii
+
+function asciifyImage( canvasRenderer, oAscii ) {
+
+	// 念のために初期化してる
+	oCtx.clearRect( 0, 0, iWidth, iHeight );
+
+	// 先ほど作成したCanvas2dに書き込む
+	// 3D描画画面のピクセルデータを獲得するために、ctx.getImageData(left, top, width, height);を利用。
+	// left, topからwidth, heightぶんの領域のピクセルデータを獲得する
+	oCtx.drawImage( oCanvasImg, 0, 0, iWidth, iHeight );
+	var oImgData = oCtx.getImageData( 0, 0, iWidth, iHeight ).data;
+
+	// Coloring loop starts now
+	var strChars = "";
+
+	// console.time('rendering');
+
+	// 全ドットを作るために走査
+	for ( var y = 0; y < iHeight; y += 2 ) { // y++にすると何故か縦長になる
+
+		for ( var x = 0; x < iWidth; x ++ ) {
+			// ここでの走査は、2次元配列を1次元で表しているため、iOffsetはその形式にならっている。
+			// そのため、以下のIred, iGreen, iBlue, iAlphaは、その1ドットの「情報」である
+			var iOffset = ( y * iWidth + x ) * 4; // ここの"4"は「チャンネル数(RGBA)」なので、変更するとバグる
+
+			var iRed = oImgData[ iOffset ];
+			var iGreen = oImgData[ iOffset + 1 ];
+			var iBlue = oImgData[ iOffset + 2 ];
+			var iAlpha = oImgData[ iOffset + 3 ];
+			var iCharIdx;
+
+			var fBrightness;
+
+			// 以下の式は、RGBからグレーに変換する際に使う
+			// カラーでここからコメントアウト
+			/*
+			fBrightness = ( 0.3 * iRed + 0.59 * iGreen + 0.11 * iBlue ) / 255;
+
+			if ( iAlpha == 0 ) {
+
+				// should calculate alpha instead, but quick hack :)
+				//fBrightness *= (iAlpha / 255);
+				fBrightness = 1;
+
+			}
+
+			iCharIdx = Math.floor( ( 1 - fBrightness ) * ( aCharList.length - 1 ) );
+
+			if ( bInvert ) {
+				iCharIdx = aCharList.length - iCharIdx - 1;
+			}
+			*/
+			// カラーでここまでコメントアウト
+
+			// good for debugging
+			//fBrightness = Math.floor(fBrightness * 10);
+			//strThisChar = fBrightness;
+
+			// ここで、もしbColorかつbBlockがtrueならば、background-color:rgbを利用して「背景色を変えたchar」を利用して1ドットを作成している
+			var strThisChar = aCharList[ iCharIdx ];
+
+			if ( strThisChar === undefined || strThisChar == " " )
+				strThisChar = "&nbsp;";
+
+			if ( bColor ) {
+
+				strChars += "<span style='"
+					+ "color:rgb(" + iRed + "," + iGreen + "," + iBlue + ");"
+					+ ( bBlock ? "background-color:rgb(" + iRed + "," + iGreen + "," + iBlue + ");" : "" )
+					+ ( bAlpha ? "opacity:" + ( iAlpha / 255 ) + ";" : "" )
+					+ "'>" + strThisChar + "</span>";
+
+			} else {
+
+				strChars += strThisChar;
+
+			}
+
+		}
+		// 色情報を持つ配列はあくまで1次元配列なので、改行しないとめちゃくちゃ横長になる
+		strChars += "<br/>";
+
+	}
+
+	// 文字列をテーブルにして、innerHTMLしている
+	oAscii.innerHTML = "<tr><td>" + strChars + "</td></tr>";
+}
+
+// end modified asciifyImage block
+
+};
+			//---
+
+			let camera, controls, scene, renderer, effect;
+
+			let sphere, plane;
+
+			const start = Date.now();
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 70, 512 / 384, 1, 1000 );
+				camera.position.y = 150;
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+				//scene.background = new THREE.Color( 0.5, 0.5, 0.5 );
+
+				const pointLight1 = new THREE.PointLight( 0xffffff );
+				pointLight1.position.set( 500, 500, 500 );
+				scene.add( pointLight1 );
+
+				const pointLight2 = new THREE.PointLight( 0xffffff, 0.25 );
+				pointLight2.position.set( - 500, - 500, - 500 );
+				scene.add( pointLight2 );
+
+				//sphere = new THREE.Mesh( new THREE.SphereGeometry( 200, 20, 10 ), new THREE.MeshPhongMaterial( { flatShading: true } ) );
+				//sphere = new THREE.Mesh( new THREE.IcosahedronGeometry(200), new THREE.MeshPhongMaterial( { flatShading: true } ) );
+				const sphereC = new THREE.Mesh( new THREE.BoxGeometry(200, 200, 200), new THREE.MeshToonMaterial( { flatShading: true, color: 0xaaaaff } ) );
+				const legRC = new THREE.Mesh( new THREE.CylinderGeometry(8, 5, 70, 30), new THREE.MeshPhongMaterial( { flatShading: true, color: 0x000000 } ) );
+				legRC.position.set(70, -150, 0);
+				const legLC = new THREE.Mesh( new THREE.CylinderGeometry(8, 5, 70, 30), new THREE.MeshPhongMaterial( { flatShading: true, color: 0x000000 } ) );
+				legLC.position.set(-70, -150, 0);
+				const eyeRC = new THREE.Mesh( new THREE.BoxGeometry(15, 15, 15), new THREE.MeshToonMaterial({ flatShading: true, color: 0x000000 }) );
+				eyeRC.position.set(45, 30, 100);
+				const eyeLC = new THREE.Mesh( new THREE.BoxGeometry(15, 15, 15), new THREE.MeshToonMaterial({ flatShading: true, color: 0x000000 }) );
+				eyeLC.position.set(-45, 30, 100);
+
+				sphere = new THREE.Group(); //メッシュをグループ化
+				sphere.add(sphereC, legRC, legLC, eyeRC, eyeLC);
+				scene.add( sphere );
+
+				// 背景billboard
+				/*
+				const bg = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000 ), new THREE.SpriteMaterial( { flatShading: true, color: 0x000033 } ) );
+				scene.add( bg );
+				*/
+
+				// Plane
+
+				plane = new THREE.Mesh( new THREE.PlaneGeometry( 400, 400 ), new THREE.MeshToonMaterial( { flatShading: true, color: 0xaaaaaa } ) );
+				plane.position.y = - 200;
+				plane.rotation.x = - Math.PI / 2;
+				scene.add( plane );
+
+				renderer = new THREE.WebGLRenderer({
+					div: document.querySelector('#threejs20210711'),
+					alpha: true  // 背景をグラデーションするために有効
+				});
+				renderer.setSize( 512, 384 );
+				renderer.setClearColor(0x666666, 1);
+
+				effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
+				effect.setSize( 512, 384 );
+				// ここの指定は何？
+				//effect.domElement.style.color = 'white';
+				//effect.domElement.style.backgroundColor = 'black';
+
+				// Special case: append effect.domElement, instead of renderer.domElement.
+				// AsciiEffect creates a custom domElement (a div container) where the ASCII elements are placed.
+
+				document.body.appendChild( effect.domElement );
+				controls = new OrbitControls( camera, effect.domElement );
+
+				//document.body.appendChild( renderer.domElement );
+				//controls = new OrbitControls( camera, renderer.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = 512 / 384;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( 512, 384 );
+				effect.setSize( 512, 384 );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			function render() {
+
+				const timer = Date.now() - start;
+
+				sphere.position.y = Math.abs( Math.sin( timer * 0.002 ) ) * 150;
+				//sphere.rotation.x = timer * 0.0003;
+				sphere.rotation.y = timer * 0.0002;
+
+				controls.update();
+
+				effect.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
