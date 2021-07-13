@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<title>VISUALIZING ENVELOPES</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="icon" type="image/png" sizes="174x174" href="./favicon.png">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/webcomponentsjs/2.4.3/webcomponents-bundle.js"></script>
+	<link href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" rel="stylesheet"/>
+	<script src="https://tonejs.github.io/build/Tone.js"></script>
+	<script src="https://tonejs.github.io/examples/js/tone-ui.js"></script>
+	<script src="https://tonejs.github.io/examples/js/components.js"></script>
+</head>
+<body>
+		<div slot="explanation">
+			
+		</div>
+
+		<div id="content">
+			<tone-play-toggle></tone-play-toggle>
+		</div>
+
+	<script type="text/javascript">
+	// 参考：
+	// https://tonejs.github.io/examples/funkyShape
+		new p5((p5) => {
+			
+			p5.setup = () => {
+				// create a canvas width and height of the screen
+				// document.querySelector('canvas')
+				p5.createCanvas(300, 300);
+				// no fill
+				p5.fill(0);
+				p5.strokeWeight(1);
+				p5.rectMode(p5.CENTER);
+			};
+
+			let phase = 0;
+
+			p5.draw = () => {
+				p5.background(0);
+				p5.stroke(255);
+				// drawing the kick wave at the bottom
+				// it is composed of a simple sine wave that
+				// changes in height with the kick envelope
+				for (let i = 0; i < p5.width; i++) {
+					// scaling kickEnvelope value by 200 
+					// since default is 0-1
+					const kickValue = kickEnvelope.value * 200;
+					// multiplying this value to scale the sine wave 
+					// depending on x position
+					const yDot = Math.sin((i / 60) + phase) * kickValue;
+					p5.point(i, p5.height -150 + yDot);
+				}
+				// increasing phase means that the kick wave will 
+				// not be standing and looks more dynamic
+				phase += 1;
+				// updating circle and square positions with 
+				// bass envelop visualizer
+				const bassRadius = p5.height * bassEnvelope.value;
+				p5.stroke("red");
+				const bassX = p5.noise(p5.millis() / 1000) * p5.width;
+				const bassY = p5.noise(phase / 100) * p5.height;
+				p5.ellipse(bassX, bassY, bassRadius, bassRadius);
+				
+				// beep envelope viz
+				const beepX = p5.noise(p5.millis() / 500) * p5.width;
+				const beepY = p5.noise(phase / 50) * p5.height;
+				const beepSize = p5.height * bleepEnvelope.value;
+				p5.stroke("yellow");
+				p5.rect(beepX, beepY, beepSize, beepSize);
+			};
+		}, document.querySelector("#content"));
+
+		// filtering the hi-hats a bit
+		// to make them sound nicer
+		const lowPass = new Tone.Filter({
+			frequency: 14000,
+		}).toDestination();
+
+		// we can make our own hi hats with 
+		// the noise synth and a sharp filter envelope
+		const openHiHat = new Tone.NoiseSynth({
+			volume: -10,
+			envelope: {
+				attack: 0.01,
+				decay: 0.3
+			},
+		}).connect(lowPass);
+
+		const openHiHatPart = new Tone.Part(((time) => {
+			openHiHat.triggerAttack(time);
+		}), [{ "8n": 1 }, { "8n": 5 }]).start(0);
+
+		const closedHiHat = new Tone.NoiseSynth({
+			volume: -10,
+			envelope: {
+				attack: 0.01,
+				decay: 0.15
+			},
+		}).connect(lowPass);
+
+		const closedHatPart = new Tone.Part(((time) => {
+			closedHiHat.triggerAttack(time);
+		}), [0, { "16n": 1 }, { "16n": 1 }, { "16n": 3 }, { "16n": 3 }, { "16n": 5 }, { "16n": 7 }, { "16n": 8 }]).start(0);
+
+		// BASS
+		const bassEnvelope = new Tone.AmplitudeEnvelope({
+			attack: 0.01,
+			decay: 0.2,
+			sustain: 0,
+		}).toDestination();
+
+		const bassFilter = new Tone.Filter({
+			frequency: 400,
+			Q: 1
+		});
+
+		const bass = new Tone.PulseOscillator("A2", 0.4).chain(bassFilter, bassEnvelope);
+		bass.start();
+
+		const bassPart = new Tone.Part(((time, note) => {
+			bass.frequency.setValueAtTime(note, time);
+			bassEnvelope.triggerAttack(time);
+		}), [["0:0", "A2"],
+			["0:0:1", "A2"],
+			["0:0:2", "A3"],
+			["0:0:0", "A2"],
+			["0:1:1", "A2"],
+			["0:1:2", "A3"],
+			["0:1:3", "A2"],
+			["0:2", "A2"],
+			["0:2:1", "A2"],
+			["0:2:2", "A3"],
+			["0:3:0", "A2"],
+			["0:3:1", "A2"],
+			["0:3:2", "A3"],
+			["0:3:3", "A2"]]).start(0);
+
+		// BLEEP
+		const bleepEnvelope = new Tone.AmplitudeEnvelope({
+			attack: 0.01,
+			decay: 0.4,
+			sustain: 0,
+		}).toDestination();
+
+		const bleep = new Tone.Oscillator("A4").connect(bleepEnvelope);
+		bleep.start();
+
+		const bleepLoop = new Tone.Part(((time, note) => {
+			bleep.frequency.setValueAtTime(note, time);
+			bleepEnvelope.triggerAttack(time);
+		}), [["0:0", "E6"],
+			["0:0:1", "C6"],
+			["0:0:2", "A5"],
+			["0:1:0", "E5"],
+			["0:1:1", "E4"],
+			["0:1:2", "A4"],
+			["0:1:3", "C5"]]).start(0);
+
+		// KICK
+		const kickEnvelope = new Tone.AmplitudeEnvelope({
+			attack: 0.01,
+			decay: 0.2,
+			sustain: 0,
+		}).toDestination();
+
+		const kick = new Tone.Oscillator("A2").connect(kickEnvelope).start();
+
+		const kickSnapEnv = new Tone.FrequencyEnvelope({
+			attack: 0.005,
+			decay: 0.01,
+			sustain: 0,
+			baseFrequency: "C2",
+			octaves: 2.0
+		}).connect(kick.frequency);
+
+		const kickPart = new Tone.Part(((time) => {
+			kickEnvelope.triggerAttack(time);
+			kickSnapEnv.triggerAttack(time);
+		}), ["0", "0:1", "0:2", "0:3"]).start(0);
+
+		// TRANSPORT
+		Tone.Transport.loopStart = 0;
+		Tone.Transport.loopEnd = "1:0";
+		Tone.Transport.loop = true;
+
+		// bind the interface
+		document.querySelector("tone-play-toggle").addEventListener("start", e => Tone.Transport.start());
+		document.querySelector("tone-play-toggle").addEventListener("stop", e => Tone.Transport.stop());
+
+		const controls = drawer({
+			parent: document.body,
+			open: false,
+		});
+
+		controls.folder({
+			name: "Hihat"
+		}).add({
+			tone: lowPass,
+		}).add({
+			name: "Open Hihat",
+			tone: openHiHat,
+		}).add({
+			name: "Closed Hihat",
+			tone: closedHiHat
+		});
+
+		controls.folder({
+			name: "Bass"
+		}).add({
+			tone: bassFilter,
+		}).add({
+			tone: bass,
+		}).add({
+			tone: bassEnvelope
+		});
+
+		controls.folder({
+			name: "Bleep"
+		}).add({
+			tone: bleep,
+		}).add({
+			tone: bleepEnvelope,
+		});
+
+		controls.folder({
+			name: "Kick"
+		}).add({
+			tone: kick,
+		}).add({
+			tone: kickEnvelope,
+		}).add({
+			tone: kickSnapEnv,
+		});
+		Tone.Transport.bpm.value = 160;
+	</script>
+
+</body>
+</html>
