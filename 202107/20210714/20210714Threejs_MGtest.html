@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js"></script>
+    <script>
+      // Three.jsで色々な形のGeometryを作成
+      // 参考サイト：
+      // http://stemkoski.github.io/Three.js/Shapes.html
+
+      // ページの読み込みを待つ
+      window.addEventListener('load', init);
+
+      function init() {
+        // サイズを指定
+        const width = 512;
+        const height = 384;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector('#myCanvas20210627'),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(30, 0, 20);
+        camera.lookAt(new THREE.Vector3(30, 0, 0));
+
+        // 床を作成
+        const meshFloor = new THREE.Mesh(
+          new THREE.BoxGeometry(2000, 0.001, 2000),
+          new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.0 })
+        );
+        meshFloor.position.set(0, 1000, 0);
+        // 影を受け付ける
+        scene.add(meshFloor);
+
+        // オブジェクトを作成
+        for (let i = 0 ; i < 30 ; ++i){
+          for (let j = 0 ; j < 30 ; ++j){
+            let meshCube = new THREE.Mesh(
+            new THREE.BoxGeometry( 2, 2, 0.10 ),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.0 })
+            );
+
+            if (i % 2 != 0 && j % 2 == 0){
+              meshCube.position.set(i * 2, j * 2, 0);
+              scene.add(meshCube);
+            } else if (i % 2 != 0 && j % 2 != 0){
+              meshCube.position.set(i * 2 + 2, j * 2, 0);
+              scene.add(meshCube);
+            }
+          }
+        }
+        
+
+        // 照明を作成
+        // 平行光源を作成
+        // new THREE.DirectionalLight(色, 光の強さ)
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        scene.add(light);
+
+        // ライトに影を有効にする
+
+        scene.add(light);
+
+        // カメラヘルパーで領域を可視化できる。
+        //let cameraHelper = new THREE.CameraHelper(light.shadow.camera);
+        //scene.add(cameraHelper);
+
+        let frame = 0;
+        let upswitch = true;
+        let downswitch = false;
+        tick();
+        
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 照明の位置を更新
+          const t = Date.now() / 1000;
+          const r = 20.0;
+          const lz = r * Math.cos(t);
+          const ly = r * Math.sin(t);
+          const lx = 0.10 * Math.sin(t / 3.0);
+          light.position.set(lx, ly, lz);
+
+          if (upswitch){
+            ++frame;
+            
+          } else if (downswitch){
+            --frame;
+          }
+
+          if (frame > 200){
+            upswitch = false;
+            downswitch = true;
+          } else if (frame < 0){
+            upswitch = true;
+            downswitch = false;
+          }
+          
+
+          camera.position.set(30, frame * 0.05, 20);
+          camera.lookAt(new THREE.Vector3(30, frame * 1, 0));
+
+          requestAnimationFrame(tick);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas20210627"></canvas>
+  </body>
+</html>
