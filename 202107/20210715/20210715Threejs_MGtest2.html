@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js"></script>
+    <script>
+      // Three.jsでフォント
+      // 参考サイト：
+      // https://irukanobox.blogspot.com/2016/02/threejs3d_28.html
+      // https://threejs.org/examples/#webgl_geometry_text
+
+      // ページの読み込みを待つ
+      window.addEventListener('load', init);
+
+      function init() {
+        // サイズを指定
+        const width = 512;
+        const height = 384;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector('#myCanvas20210627'),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // シーンを作成
+        const scene = new THREE.Scene();
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(500, -100, 10000);
+        camera.lookAt(new THREE.Vector3(400, 0, 0));
+
+        const loader = new THREE.FontLoader();
+        loader.load( 'https://k-tsuda400.github.io/files/20210715/helvetiker_bold.typeface.json', function ( font ) {
+
+const textGeometry = new THREE.TextGeometry( 'This is a pen', {
+  font: font,
+  size: 80,
+  height: 5,
+  curveSegments: 12,
+  bevelEnabled: true,
+  bevelThickness: 10,
+  bevelSize: 8,
+  bevelOffset: 0,
+  bevelSegments: 5
+} );
+let meshCube = new THREE.Mesh(
+            textGeometry,
+            new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.0 })
+        );
+        meshCube.position.set(0, 0, 0);
+        scene.add(meshCube);
+
+        // 照明を作成
+        // 平行光源を作成
+        // new THREE.DirectionalLight(色, 光の強さ)
+        const light = new THREE.DirectionalLight(0xffffdd, 500.0);
+        scene.add(light);
+
+        const plight = new THREE.PointLight( 0xe6b422, 100, 1000, 2 );
+        plight.position.set( 50, 50, 50 );
+        scene.add( plight );
+
+        let frame = 0;
+        let phase2 = false;
+        let phase2_init = true;
+        tick();
+        
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          ++frame;
+
+          // レンダリング
+          renderer.render(scene, camera);
+
+          // 照明の位置を更新
+          const t = Date.now() / 1000;
+          const r = 20.0;
+          const lz = r * Math.cos(t);
+          const ly = r * Math.sin(t);
+          const lx = 0.10 * Math.sin(t / 3.0);
+          light.position.set(lx, ly, lz);
+
+          requestAnimationFrame(tick);
+          
+          let sx = frame * 0.02;
+          let sy = frame * 0.02;
+          let sz = frame * 0.01;
+
+          if (sx > 1)sx = 1;
+          if (sy > 1)sy = 1;
+          if (sz > 1){
+            sz = 1;
+            phase2 = true;
+          }
+
+          //camera.position.set(500 * sx, -100 + 100 * sy, 2000 - 1000 * sz)
+          camera.lookAt(new THREE.Vector3(400 * sx, 500 - 500 * sy, 0));
+          meshCube.scale.set(sx, sy, sz);
+
+          if (frame % 100 < 50){
+            camera.position.set(frame % 100, frame % 100, frame % 5 + 1000);
+            plight.position.set(frame % 100, frame % 100, frame % 5);
+          } else {
+            camera.position.set(100 - frame % 100, 100 - frame % 100, frame % 5 + 1000);
+            plight.position.set(100 - frame % 100, 100 - frame % 100, frame % 5);
+          }
+          
+
+          /*
+          if (phase2){
+            next_word(frame);
+          }
+          */
+        }
+
+        /*
+        function next_word(frame){
+          if (phase2_init) {
+              const textGeometry2 = new THREE.TextGeometry( 'a pen', {
+              font: font,
+              size: 80,
+              height: 5,
+              curveSegments: 12,
+              bevelEnabled: true,
+              bevelThickness: 10,
+              bevelSize: 8,
+              bevelOffset: 0,
+              bevelSegments: 5
+            } );
+            let meshCube2 = new THREE.Mesh(
+              textGeometry2,
+              new THREE.MeshPhongMaterial({ color: 0xffffff })
+            );
+            meshCube2.position.set(0, -50, 0);
+
+            let sx = frame * 0.009;
+            let sy = frame * 0.009;
+            let sz = frame * 0.009;
+            meshCube2.scale.set(sx, sy, sz);
+
+            if (sx > 1)sx = 1;
+            if (sy > 1)sy = 1;
+            if (sz > 1){
+              sz = 1;
+              phase2 = true;
+            }
+              scene.add(meshCube2);
+              phase2_init = false;
+          }
+          else {
+            meshCube2.scale.set(sx, sy, sz);
+          }
+        }
+        */
+  } );
+}
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas20210627"></canvas>
+  </body>
+</html>
