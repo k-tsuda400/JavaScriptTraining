@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Variations on episodes from anthropocene</title>
+
+		<meta charset="utf-8">
+	</head>
+
+	<body>
+		<div id="container"></div>
+
+		<div id="info">
+			<span class="title">
+			</span>
+		</div>
+
+		<script src="https://alteredqualia.com/xg/examples/js/xg.min.minifellas2.js"></script>
+
+		<script>
+			// 参考：
+			// https://alteredqualia.com
+			var loadingElement = document.getElementById( 'loading' );
+			var infoElement = document.getElementById( 'info' );
+			var footerElement = document.getElementById( 'footer' );
+
+			var infoVisible = true;
+
+			var hasWebGL1 = Detector.webgl;
+			var hasWebGL2 = Detector.webgl2;
+
+			if ( ! ( hasWebGL1 || hasWebGL2 ) ) Detector.addGetWebGLMessage();
+
+			var backend = hasWebGL2 ? "webgl2" : "webgl1";
+
+			// WebGL2 shaders broken in newer Chrome
+
+			backend = "webgl1";
+
+			var useDeferred = true;
+			var useHDRMirrors = true;
+
+			//
+
+			var MARGIN = 0;
+			var SIDE_MARGIN = 0;
+
+			var SCALE = window.devicePixelRatio;
+
+			var WIDTH = 512 - 2 * SIDE_MARGIN;
+			var HEIGHT = 384 - 2 * MARGIN;
+
+			// camera
+
+			var FOV = 32.5;
+			var ASPECT = WIDTH / HEIGHT;
+			var NEAR = 1;
+			var FAR = 4000;
+
+			var target = new XG.Vector3( 0, -30, 0 );
+
+			var cameraFovTarget = 32.5;
+
+			//
+
+			var camera, scene, renderer;
+			var innerRenderer;
+			var mesh;
+
+			var humanGeometries = [];
+			var setups = [];
+
+			var currentSetup = 3;
+
+			//
+
+			var groundMirror;
+
+			var lightBall;
+			var frontLight, pointLight;
+
+			var loadCounter = 0;
+
+			//
+
+			var locations = [
+			[    0,  120 ],
+			[ -125,   60 ],
+			[  125,   60 ],
+			[  175, -80 ],
+			[ -175, -80 ],
+			[   0, -160 ],
+			[ -200,  200 ],
+			[  200,  200 ],
+			];
+
+			//
+
+			var clock = new XG.Clock();
+
+			var touchStartTime = 0;
+			var tapDeltaTime = 0.2;
+
+			var tapStartX = 0;
+			var tapStartY = 0;
+			var tapDeltaDistance = 100;
+
+			// camera controls
+
+			var mouseX = 0;
+			var mouseY = 0;
+
+			var targetX = 0.0;
+			var targetY = 0.0;
+			var angle = 0.0;
+			var height = 0.0;
+
+			var windowHalfX = 512 / 2;
+			var windowHalfY = 384 / 2;
+
+			//
+
+			init();
+			animate();
+
+			//
+
+			function init() {
+
+				// scene
+
+				scene = new XG.Scene();
+
+				// camera
+
+				camera = new XG.PerspectiveCamera( cameraFovTarget, ASPECT, NEAR, FAR );
+				camera.position.set( 0, 50, 160 );
+
+				// renderer
+
+				var pars = {
+
+					"width"			: WIDTH,
+					"height"		: HEIGHT,
+					"scale"			: 1.0,
+					"antialias"		: true,
+					"tonemapping"	: XG.Filmic2015Operator,
+					"brightness"	: 1,
+					"dither"		: true,
+					"backend"		: backend,
+					"useMultipleRenderTargets": true,
+					"devicePixelRatio" : 1.0
+
+				};
+
+				if ( useDeferred ) {
+
+					renderer = new XG.DeferredRenderer( pars );
+
+				} else {
+
+					pars[ "devicePixelRatio" ] = 1.0;
+					renderer = new XG.ForwardRenderer( pars );
+
+				}
+
+				renderer.setSize( WIDTH, HEIGHT );
+
+				renderer.shadowMapEnabled = true;
+				renderer.shadowMapType = XG.PCFSoftHQShadowMap;
+				renderer.shadowMapSlopeDepthBias = true;
+				renderer.shadowMapSlopeScale = 6;
+				renderer.shadowMapSlopeBias = 0.01;
+
+				renderer.shadowMapUseDepthTextures = true;
+
+				innerRenderer = ( renderer instanceof XG.DeferredRenderer ) ? renderer.renderer : renderer;
+
+				var scaledWidth  = WIDTH * SCALE;
+				var scaledHeight = HEIGHT * SCALE;
+
+				var capabilities = {
+
+					"isES3" : ( backend === "webgl2" ),
+
+					"hasFloatsNearest"		: innerRenderer.supportsFloatTextures(),
+					"hasFloatsLinear"		: innerRenderer.supportsFloatTexturesLinear(),
+
+					"hasHalfFloatsNearest"	: innerRenderer.supportsHalfFloatTextures(),
+					"hasHalfFloatsLinear"	: innerRenderer.supportsHalfFloatTexturesLinear(),
+
+					"hasRGBFloatRenderTarget"	 : innerRenderer.supportsRGBFloatRenderTarget(),
+					"hasRGBHalfFloatRenderTarget": innerRenderer.supportsRGBHalfFloatRenderTarget(),
+
+					"hasRGBUbyteRenderTarget" : innerRenderer.supportsRGBUnsignedByteRenderTarget()
+
+				};
+
+				// --------------------------------------------------------------------------
+				// bloom effect
+				// --------------------------------------------------------------------------
+
+				var bloomStrength = 0.925;
+				var bloomRadius = 1;
+				var bloomThreshold = 0.85;
+
+				var bloomFactors = [ 1.0, 0.8, 0.6, 0.4, 0.2 ];
+
+				var colorTintMaster = 0xff2200;
+				var bloomTintColors = [ new XG.Color( colorTintMaster ), new XG.Color( colorTintMaster ), new XG.Color( colorTintMaster ), new XG.Color( colorTintMaster ), new XG.Color( colorTintMaster ) ];
+
+				effectBloom = new XG.KawaseBloomPass( scaledWidth, scaledHeight, bloomStrength, bloomRadius, bloomThreshold, capabilities );
+				effectBloom.compositeUniforms[ "bloomFactors" ].value = bloomFactors;
+				effectBloom.bloomTintColors = bloomTintColors;
+
+				if ( useDeferred ) {
+
+					renderer.addEffect( effectBloom );
+
+				} else {
+
+					var rtParameters = {
+
+						"minFilter"     : XG.LinearFilter,
+						"magFilter"     : XG.LinearFilter,
+						"format"        : XG.RGBAFormat,
+						"internalFormat": XG.RGBAFormat,
+						"type"          : XG.UnsignedByteType,
+						"stencilBuffer" : false
+
+					};
+
+					var renderScene = new XG.RenderPass( scene, camera );
+
+					effectFXAA = new XG.ShaderPass( XG.FXAAShader );
+					effectFXAA.uniforms[ 'resolution' ].value.set( 1 / scaledWidth, 1 / scaledHeight );
+
+					var copyShader = new XG.ShaderPass( XG.CopyShader );
+					copyShader.renderToScreen = true;
+
+					renderTarget = new XG.RenderTarget( scaledWidth, scaledHeight, rtParameters );
+
+					composer = new XG.EffectComposer( renderer );
+					composer.setSize( scaledWidth, scaledHeight );
+
+					composer.addPass( renderScene );
+					composer.addPass( effectFXAA );
+					composer.addPass( effectBloom );
+					composer.addPass( copyShader );
+
+				}
+
+				//
+				renderer.domElement.style.position = "absolute";
+				renderer.domElement.style.top = MARGIN + "px";
+				renderer.domElement.style.left = SIDE_MARGIN + "px";
+
+				var container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+
+				innerRenderer = renderer;
+
+				if ( renderer instanceof XG.DeferredRenderer ) innerRenderer = renderer.renderer;
+
+				createScene();
+
+				// events
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				renderer.domElement.addEventListener( 'touchmove', onTouchMove, false );
+				renderer.domElement.addEventListener( 'touchstart', onTouchStart, false );
+				renderer.domElement.addEventListener( 'touchend', onTouchEnd, false );
+				renderer.domElement.addEventListener( 'wheel', onDocumentWheel, false );
+
+				document.addEventListener( 'keydown', onKeyDown, false );
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function setBloomTint( h, s, v ) {
+
+				var colors = effectBloom.bloomTintColors;
+
+				for ( var i = 0, il = colors.length; i < il; i ++ ) {
+
+					var color = colors[ i ];
+					color.setHSV( h, s, v );
+
+				}
+
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function onKeyDown ( event ) {
+
+				switch ( event.keyCode ) {
+
+					case 37: /*left*/
+					case 65: /*A*/   break;
+
+					case 39: /*right*/
+					case 68: /*D*/   break;
+
+					case 32: /*space*/ break;
+				}
+
+			}
+
+			// ---------------------------------------------------------------------------------------------------------------
+
+			function onDocumentWheel ( event ) {
+
+				var unit = event.deltaMode;
+
+				var scale = 1;
+
+				if ( unit === 0 ) scale = 0.01;		// pixels
+				else if ( unit === 1 ) scale = 0.1;	// lines
+
+				cameraFovTarget += event.deltaY * scale;
+
+				var maxFov = 90;
+				var minFov = 10;
+
+				if ( cameraFovTarget > maxFov ) {
+
+					cameraFovTarget = maxFov;
+
+				}
+
+				if ( cameraFovTarget < minFov ) {
+
+					cameraFovTarget = minFov;
+
+				}
+
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function createBox( parameters ) {
+
+				var root = new XG.Node();
+
+				var rightColor = parameters.rightColor;
+				var leftColor = parameters.leftColor;
+				var topColor = parameters.topColor;
+				var backColor = parameters.backColor;
+				var frontColor = parameters.frontColor;
+				var bottomColor = parameters.bottomColor;
+
+				var shininess = parameters.shininess;
+
+				var boxSize = parameters.boxSize;
+				var wallWidth = parameters.wallWidth;
+
+				// geometries
+				var bottomGeo = new XG.PlaneGeometry( boxSize * 2, boxSize * 2 );
+
+				// bottom wall
+				var bottomMaterial = new XG.EmissiveMaterial( { "color": bottomColor, "shininess": shininess } );
+
+				var planeBottomOut = new XG.Mesh( bottomGeo, bottomMaterial );
+				planeBottomOut.position.y = -0.5;
+				planeBottomOut.position.z = - wallWidth * 0.5;
+				planeBottomOut.rotation.x = Math.PI / 2;
+				root.add( planeBottomOut );
+
+				planeBottomOut.receiveShadow = true;
+
+				return root;
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function createScene() {
+
+				var boxParameters = {
+					"boxSize"	: 300,
+					"wallWidth"	: 10,
+
+					"rightColor"	: 0xffff00,
+					"leftColor"		: 0xff00ff,
+					"topColor"		: 0xffffff,
+					"bottomColor"	: 0x000000,
+					"frontColor"	: 0x000000,
+					"backColor"		: 0xffeedd,
+
+					"shininess"	: 10
+				};
+
+				var box = createBox( boxParameters );
+				scene.add( box );
+
+				// textures
+				var dummyWhiteMap = XG.ImageUtils.generateDataTexture( 4, 4, new XG.Color( 0xffffff ) );
+
+			    // mirrors
+				var largeMirrorGeo = new XG.PlaneGeometry( boxParameters.boxSize * 20, boxParameters.boxSize * 20 );
+				var smallMirrorGeo = new XG.PlaneGeometry( boxParameters.boxSize * 2, 200 );
+
+				groundMirror = new XG.MirrorSurface( innerRenderer, {
+
+					"clipBias"		: 0.0003,
+					"textureWidth"	: 1024 * 2,
+					"textureHeight"	: 1024 * 4,
+					"specular"		: 0x999999,
+					"glossMap"		: dummyWhiteMap,
+					"gloss"			: 1.00, // 光沢。大きいほど鏡のように反射
+					"repeat"		: [ 2, 2 ]
+
+				} );
+
+				groundMirror.material.defines[ "USE_REFLECTION" ] = true;
+
+				var mirrorUniforms = groundMirror.material.uniforms;
+
+				var glossMapMetal = XG.ImageUtils.loadTexture( "https://k-tsuda400.github.io/images/20210716/metal2b_g.jpg", function() {
+
+					mirrorUniforms[ "glossSampler" ].value = glossMapMetal;
+
+				} );
+
+				glossMapMetal.wrapS = glossMapMetal.wrapT = XG.RepeatWrapping;
+				glossMapMetal.repeat.set( 2, 2 );
+				glossMapMetal.anisotropy = 8;
+
+				var groundMirrorMesh = new XG.Mesh( largeMirrorGeo, groundMirror.material );
+				groundMirrorMesh.add( groundMirror );
+				groundMirrorMesh.rotation.x = - Math.PI / 2;
+				scene.add( groundMirrorMesh );
+
+				groundMirrorMesh.receiveShadow = true;
+
+				scene.properties.mirrors = [ groundMirror ];
+
+
+				if ( useHDRMirrors ) {
+
+					var halfFloatType   = ( backend === "webgl2" ) ? XG.HalfFloatType2 : XG.HalfFloatType1;
+					var halfFloatFormat = ( backend === "webgl2" ) ? XG.RGBA16F : XG.RGBAFormat;
+
+					groundMirror.texture.type = halfFloatType;
+					groundMirror.tempTexture.type = halfFloatType;
+
+					groundMirror.texture.internalFormat = halfFloatFormat;
+					groundMirror.tempTexture.internalFormat = halfFloatFormat;
+
+				}
+
+				// sphere lights
+				var ballRadius = 5;
+				var ballDistance = 200;
+				var ballIntensity = 2.5;
+				var ballColor = 0xffffff;
+
+				var heroLightColor = 0xffffff;
+				var heroLightIntensity = 3.0;
+				var heroLightDistance = 150;
+
+				var sideLightIntensity = 0.25;
+				var areaShadowSize = 64;
+				var areaScale = 0.45;
+
+				var geometry = new XG.SphereGeometry( ballRadius, 32, 16 );
+				var material = new XG.EmissiveMaterial( { "color": ballColor, "intensity": ballIntensity, "transparent": true } );
+
+				for ( var i = 0, il = locations.length; i < il; i ++ ) {
+
+					var location = locations[ i ];
+
+					var x = location[ 0 ];
+					var z = location[ 1 ];
+
+					lightBall = new XG.Mesh( geometry, material );
+					lightBall.position.set( x, 50, z + 80 );
+					scene.add( lightBall );
+
+					frontLight = new XG.SphereLight( heroLightColor, heroLightIntensity, heroLightDistance );
+
+					frontLight.castShadow = true;
+					frontLight.shadowCameraNear = 10.5;
+					frontLight.shadowCameraFar = 500;
+					frontLight.shadowDarkness = 0.5;
+					frontLight.shadowMapWidth = 64 * 2;
+					frontLight.shadowMapHeight = 64 * 2;
+					frontLight.shadowMapType = XG.PCFSoftHQShadowMap;
+
+					lightBall.add( frontLight );
+
+					lightBall.visible = false;
+				}
+
+				// ambient light
+
+				var hemiLight = new XG.HemisphereLight( 0xffffff, 0x000000, 0.2 );
+				hemiLight.position.set( 0, 1, 0 );
+				scene.add( hemiLight );
+
+				hemiLight.intensity = 0.01;
+
+				// scene content
+				initSetups();
+				addBoxes();
+
+			}
+
+			// ----------------------------------------------------------------------------------
+
+			function initSetups() {
+				// human materials
+				var emissiveWhite = new XG.EmissiveMaterial( { "color": 0xffffff, "intensity": 3 } );
+
+				var emissiveRed = new XG.EmissiveMaterial( { "color": 0xffffff, "intensity": 3 } );
+				emissiveRed.color.setHSV( 0.05, 0.575, 1 );
+
+				var emissiveRed2 = new XG.EmissiveMaterial( { "color": 0xffffff, "intensity": 3 } );
+				emissiveRed2.color.setHSV( 0.0, 0.99, 1 );
+
+				var emissiveBlack = new XG.EmissiveMaterial( { "color": 0x000000 } );
+
+				var phongWhite = new XG.PhongMaterial( { "color": 0xffffff, "specular": 0x111111, "shininess": 100 } );
+				phongWhite.color.setHSV( 0.01, 0.095, 0.9 );
+				phongWhite.wrapRGB.set( phongWhite.color.r, phongWhite.color.g, phongWhite.color.b ).multiplyScalar( 0.9125 );
+
+				var phongRed = new XG.PhongMaterial( { "color": 0xffffff, "specular": 0x111111, "shininess": 10 } );
+				phongRed.color.setHSV( 0.01, 0.95, 0.9 );
+
+				// box materials
+				var emissiveRedVertexColors = new XG.EmissiveMaterial( { "color": 0xffffff, "intensity": 3.0, "vertexColors": true } );
+				emissiveRedVertexColors.color.setHSV( 0.05, 0.575, 1 );
+
+				var emissiveBlackVertexColors = new XG.EmissiveMaterial( { "color": 0x000000, "intensity": 0.0, "vertexColors": true } );
+
+				var phongRedVertexColors = new XG.PhongMaterial( { "color": 0xffffff, "vertexColors": true } );
+				phongRedVertexColors.color.setHSV( 0.025, 0.95, 0.99 );
+
+				var phongBlackVertexColors = new XG.PhongMaterial( { "color": 0x000000, "shininess": 30.0, "vertexColors": true } );
+
+				var phongBlackRedVertexColors = new XG.PhongMaterial( { "color": 0x000000, "shininess": 1.0, "vertexColors": true } );
+				phongBlackRedVertexColors.color.setHSV( 0.0, 0.99, 0.125 );
+
+				// configs
+
+				var setup = {
+
+					"humanMaterial"	: emissiveWhite,
+					"humanShadows"	: true,
+					"humans"		: [],
+
+					"boxMaterial"	: phongBlackVertexColors,
+					"boxes"			: [],
+
+					"bloomTint"		: [ 0.6, 0.9, 1 ],
+					"bloomThreshold": 0.2
+
+				};
+
+				setups.push( setup );
+
+				//
+
+				var setup = {
+
+					"humanMaterial"	: emissiveRed2,
+					"humanShadows"	: true,
+					"humans"		: [],
+
+					"boxMaterial"	: phongBlackRedVertexColors,
+					"boxes"			: [],
+
+					"bloomTint"		: [ 0.022, 1, 1 ],
+					"bloomThreshold": 0.2
+
+				};
+
+				setups.push( setup );
+
+				//
+
+				var setup = {
+
+					"humanMaterial"	: emissiveRed,
+					"humanShadows"	: false,
+					"humans"		: [],
+
+					"boxMaterial"	: phongRed,
+					"boxes"			: [],
+
+					"bloomTint"		: [ 0.0, 0, 1 ],
+					"bloomThreshold": 0.85
+
+				};
+
+				setups.push( setup );
+
+				//
+
+				var setup = {
+
+					"humanMaterial"	: emissiveBlack,
+					"humanShadows"	: true,
+					"humans"		: [],
+
+					"boxMaterial"	: emissiveRedVertexColors,
+					"boxes"			: [],
+
+					"bloomTint"		: [ 0.022, 1, 1 ],
+					"bloomThreshold": 0.85
+
+				};
+
+				setups.push( setup );
+
+				//
+
+				var setup = {
+
+					"humanMaterial"	: emissiveRed,
+					"humanShadows"	: false,
+					"humans"		: [],
+
+					"boxMaterial"	: phongBlackVertexColors,
+					"boxes"			: [],
+
+					"bloomTint"		: [ 0.022, 1, 1 ],
+					"bloomThreshold": 0.85
+
+				};
+
+				setups.push( setup );
+
+			}
+
+			// ----------------------------------------------------------------------------------
+
+			function addBoxes() {
+
+				var d = 50;
+				var d2 = d * 0.5;
+
+				var boxGeo = new XG.BoxGeometry( d, d, d );
+				XG.GeometryUtils.floor( [ boxGeo ] );
+
+				var backColor  = new XG.Color( 0x0c0c0c );
+				var frontColor = new XG.Color( 0xffffff );
+				boxGeo.addAttribute( "color", Float32Array, 3 );
+				boxGeo.setAttributeValue( "color", backColor );
+				boxGeo.setAttributeValue( "color", frontColor, 48, 60 );
+
+				for ( var j = 0, jl = setups.length; j < jl; j ++ ) {
+
+					var setup = setups[ j ];
+					var material = setup[ "boxMaterial" ];
+					var boxes = setup[ "boxes" ];
+
+					var visible = ( j === currentSetup );
+
+					for ( var i = 0, il = locations.length; i < il; i ++ ) {
+
+						var location = locations[ i ];
+
+						var x = location[ 0 ];
+						var z = location[ 1 ];
+
+						var boxMesh = new XG.Mesh( boxGeo, material );
+						boxMesh.position.x = x;
+						boxMesh.position.z = z;
+						scene.add( boxMesh );
+
+						boxMesh.visible = visible;
+
+						boxes[ i ] = boxMesh;
+
+					}
+
+				}
+
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function enableSetup( index, show ) {
+
+				var setup = setups[ index ];
+				var boxes = setup[ "boxes" ];
+
+				for ( var i = 0, il = boxes.length; i < il; i ++ ) {
+
+					var box = boxes[ i ];
+					box.visible = show;
+
+				}
+
+			}
+
+			function hideSetup( index ) {
+
+				enableSetup( index, false );
+
+			}
+
+			function showSetup( index ) {
+
+				enableSetup( index, true );
+
+				var setup = setups[ index ];
+
+				var bloomTint = setup[ "bloomTint" ];
+				var h = bloomTint[ 0 ];
+				var s = bloomTint[ 1 ];
+				var v = bloomTint[ 2 ];
+
+				setBloomTint( h, s, v );
+
+				effectBloom.threshold = setup[ "bloomThreshold" ];
+			}
+
+			// ------------------------------------------------------------------------------------------
+
+			function onWindowResize ( event ) {
+
+				WIDTH = 512;
+				HEIGHT = 384;
+
+				renderer.setSize( WIDTH, HEIGHT );
+
+				renderer.domElement.style.top = MARGIN + "px";
+				renderer.domElement.style.left = SIDE_MARGIN + "px";
+
+				camera.aspect = WIDTH / HEIGHT;
+				camera.updateProjectionMatrix();
+
+				var scaledWidth  = WIDTH  * SCALE;
+				var scaledHeight = HEIGHT * SCALE;
+
+				effectBloom.resize( scaledWidth, scaledHeight );
+
+				if ( ! useDeferred ) {
+
+					composer.setSize( scaledWidth, scaledHeight );
+					effectFXAA.uniforms[ 'resolution' ].value.set( 1 / scaledWidth, 1 / scaledHeight );
+
+				}
+
+			}
+
+			function onDocumentMouseMove ( event ) {
+
+				mouseX = ( event.clientX - windowHalfX ) * 1;
+				mouseY = ( event.clientY - windowHalfY ) * 1;
+
+			}
+
+			function onTouchMove( event ) {
+
+				event.preventDefault();
+
+				var touches = event.touches;
+				var touch = touches[ 0 ];
+
+				mouseX = ( touch.clientX - windowHalfX ) * 1;
+				mouseY = ( touch.clientY - windowHalfY ) * 1;
+
+			}
+
+			function onTouchStart( event ) {
+
+				event.preventDefault();
+
+				var touches = event.changedTouches;
+				var touch = touches[ 0 ];
+
+				if ( touch ) {
+
+					touchStartTime = clock.elapsedTime;
+					tapStartX = touch.clientX;
+					tapStartY = touch.clientY;
+
+				}
+
+			}
+
+			function onTouchEnd( event ) {
+
+				event.preventDefault();
+
+				var touches = event.changedTouches;
+				var touch = touches[ 0 ];
+
+				if ( touch ) {
+
+					var dx = touch.clientX - tapStartX;
+					var dy = touch.clientY - tapStartY;
+					var dd = Math.sqrt( dx * dx + dy * dy );
+
+					var currentTime = clock.elapsedTime;
+
+					if ( ( currentTime - touchStartTime < tapDeltaTime ) && dd < tapDeltaDistance )	{
+					}
+
+				}
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+
+			}
+
+			function render() {
+
+				var delta = 0.5 * clock.getDelta();
+				var time = Date.now() * 0.01;
+
+				// update camera
+
+				targetX = mouseX * 0.08;
+				targetY = mouseY * 0.08;
+
+				angle  += 0.05 * ( targetX - angle );
+				height += 0.05 * ( targetY - height );
+
+				var d = 700;
+
+				var x =  -Math.sin( angle * 0.02 ) * d;
+				var z =   Math.cos( angle * 0.02 ) * d;
+				var y = 13 * height + 250;
+
+				camera.position.set( x, y, z );
+				camera.lookAt( target );
+
+				camera.fov = camera.fov + ( cameraFovTarget - camera.fov ) * delta * 8.0;
+				camera.updateProjectionMatrix();
+
+				// update mirrors
+				if ( ! useDeferred ) {
+					groundMirror.render( scene, camera );
+				}
+
+				// render scene
+				if ( useDeferred ) {
+					renderer.render( scene, camera );
+				} else {
+					composer.render();
+				}
+			}
+		</script>
+	</body>
+</html>
