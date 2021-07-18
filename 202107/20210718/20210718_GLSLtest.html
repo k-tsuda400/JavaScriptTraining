@@ -1,0 +1,66 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>MDN Games: Shaders demo</title>
+	<style type="text/css">
+		canvas { width: 512; height: 384; }
+	</style>
+	</head>
+	<body>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
+<script id="vertexShader" type="x-shader/x-vertex">
+	precision mediump float;
+
+    void main() {
+		// 最終的な頂点の位置をここで求めている
+		// なお、座標はx成分を+10、z成分を+5している点に注目
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x+10.0, position.y, position.z+5.0, 1.0);
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+	precision mediump float;
+    uniform float time;
+
+    void main() {
+		// 時間を引数に取っているから、変動するはずだが・・・？
+        gl_FragColor = vec4(1.0, 0.5, abs(sin(time)), 0.0);
+    }
+</script>
+	<script>
+	// 参考：
+	// https://developer.mozilla.org/ja/docs/Games/Techniques/3D_on_the_web/GLSL_Shaders
+	var WIDTH = 512;
+    var HEIGHT = 384;
+
+    var renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(WIDTH, HEIGHT);
+    renderer.setClearColor(0xDDDDDD, 1);
+    document.body.appendChild(renderer.domElement);
+
+    var scene = new THREE.Scene();
+
+    var camera = new THREE.PerspectiveCamera(70, WIDTH/HEIGHT);
+    camera.position.z = 50;
+    scene.add(camera);
+
+    var boxGeometry = new THREE.BoxGeometry(10, 10, 10);
+
+	// マテリアルを、three.jsの既存のものではなく自前のシェーダー(GLSL)を呼び出す
+    var shaderMaterial = new THREE.ShaderMaterial( {
+        vertexShader: document.getElementById( 'vertexShader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+    });
+
+    var cube = new THREE.Mesh(boxGeometry, shaderMaterial);
+	//cube.position.set(-10, 0, 0);
+    scene.add(cube);
+    cube.rotation.set(0.4, 0.2, 0);
+
+    function render() {
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+    }
+    render();
+	</script>
+	</body>
+	</html>
