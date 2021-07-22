@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - effects - ascii</title>
+		<meta charset="utf-8">
+	</head>
+
+	<body>
+		<div id="info"></div>
+
+		<script type="module">
+			// コード参考元：three.jsサンプルシーン（ASCII）
+			// https://threejs.org/examples/#webgl_effects_ascii
+			import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/build/three.module.js';
+            import {OrbitControls} from 'https://threejsfundamentals.org/threejs/resources/threejs/r127/examples/jsm/controls/OrbitControls.js';
+
+			let camera, controls, scene, renderer, effect;
+
+			let sphere, plane;
+
+			const start = Date.now();
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 70, 512 / 384, 1, 10000 );
+				camera.position.y = 150;
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0, 0, 0 );
+
+				const pointLight1 = new THREE.PointLight( 0xffffff );
+				pointLight1.position.set( 500, 500, 500 );
+				scene.add( pointLight1 );
+
+				const pointLight2 = new THREE.PointLight( 0xffffff, 0.9 );
+				pointLight2.position.set( - 500, - 500, - 500 );
+				scene.add( pointLight2 );
+
+                // モデル作成
+                const points = [];
+
+                for (let i = 0; i < 7; ++i) {
+                    if (i < 2){
+                        points.push(new THREE.Vector2(Math.sin(2 * 0.2) * 100 + 3, (2 - 5) * 50.8));
+                    } else {
+                        points.push(new THREE.Vector2(Math.sin(i * 0.2) * 100 + 3, (i - 5) * 50.8));
+                    }
+                }
+
+                for (let i = 8; i < 13; ++i) {
+                    points.push(new THREE.Vector2(Math.sin((14 - i) * 0.2) * 100 + 3, (i - 5) * 50.8));
+                }
+
+                for (let i = 14; i < 16; ++i) {
+                    points.push(new THREE.Vector2(Math.sin(i * 0.2) * 150 + 3, (i - 5) * 50.8));
+                }
+
+                points.push(new THREE.Vector2(Math.sin(17 * 0.2) * 0 + 3, (17 - 5) * 42.8));
+                
+                const geometryPW = new THREE.LatheGeometry(points);
+				const pinWhite = new THREE.Mesh( geometryPW, new THREE.MeshPhongMaterial( { flatShading: true } ) );
+
+                const marks = [];
+
+                for (let i = 14; i < 16; ++i) {
+                    marks.push(new THREE.Vector2(Math.sin(14 * 0.2) * 140 + 3, (i + 2) * 20.8));
+                }
+
+                for (let i = 18; i < 20; ++i) {
+                    marks.push(new THREE.Vector2(Math.sin(18 * 0.2) * 120 + 3, (i) * 20.8));
+                }
+
+                const geometryPR = new THREE.LatheGeometry(marks);
+				const pinRed = new THREE.Mesh( geometryPR, new THREE.MeshPhongMaterial( { color: 0xAA0000, flatShading: true } ) );
+
+				sphere = new THREE.Group(); //メッシュをグループ化
+				sphere.add(pinWhite, pinRed);
+				scene.add( sphere );
+
+				// Plane
+
+				plane = new THREE.Mesh( new THREE.PlaneGeometry( 400, 400 ), new THREE.MeshBasicMaterial( { color: 0x111111 } ) );
+				plane.position.y = - 200;
+				plane.rotation.x = - Math.PI / 2;
+				scene.add( plane );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( 512, 384 );
+
+				//effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
+				//effect.setSize( 512, 384 );
+				//effect.domElement.style.color = 'white';
+				//effect.domElement.style.backgroundColor = 'black';
+
+				// Special case: append effect.domElement, instead of renderer.domElement.
+				// AsciiEffect creates a custom domElement (a div container) where the ASCII elements are placed.
+
+				document.body.appendChild( renderer.domElement );
+				controls = new OrbitControls( camera, renderer.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = 512 / 384;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( 512, 384 );
+				//effect.setSize( 512, 384 );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			function render() {
+
+				const timer = Date.now() - start;
+
+				//sphere.position.y = Math.abs( Math.sin( timer * 0.002 ) ) * 150;
+				//sphere.rotation.x = timer * 0.0003;
+				sphere.rotation.y = timer * 0.0002;
+
+				controls.update();
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
