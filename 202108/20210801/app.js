@@ -17,7 +17,9 @@ class Title extends React.Component {
 class Header extends React.Component {
   render() {
     return (
-      <header>header</header>
+      <header>header
+        <input />
+      </header>
     );
   }
 }
