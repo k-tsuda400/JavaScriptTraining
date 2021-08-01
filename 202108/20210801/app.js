@@ -15,10 +15,14 @@ class Title extends React.Component {
 
 // ------------------------------------------------------
 class Header extends React.Component {
+  handleChange(e) {
+    const text = e.target.value;
+    this.props.changeText(text);
+  }
   render() {
     return (
-      <header>header
-        <input />
+      <header>
+        <input value={this.props.text} onChange={this.handleChange.bind(this)} />
       </header>
     );
   }
@@ -41,6 +45,11 @@ class Layout extends React.Component {
       text: 'Hello World!'
     } 
   }
+
+  changeText(text) {
+      this.setState({text});
+  }
+
   render() {
     //return (
     //  <h1>It's { this.state.text }!</h1>
@@ -48,6 +57,7 @@ class Layout extends React.Component {
     return (
       <header>
         <Title />
+        <Header changeText={this.changeText.bind(this)} text={this.state.text} />
       </header>
     );
   }
