@@ -22,7 +22,7 @@ class Header extends React.Component {
   render() {
     return (
       <header>
-        <Title title={this.props.text} />
+        <Title text={this.props.text} />
         <input value={this.props.text} onChange={this.handleChange.bind(this)} />
       </header>
     );
