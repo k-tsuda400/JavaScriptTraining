@@ -1,3 +1,11 @@
+class Title extends React.Component {
+  render() {
+    return (
+      <h1>Welcome!</h1>
+    );
+  }
+}
+
 class App extends React.Component {
     constructor(props) {
       super(props);
