@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Step8.円、線、多角形を描く|Lefletの基本|埼玉大学谷謙二研究室</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.0/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.3.0/dist/leaflet.js"></script>
+  <script>
+	  // 参考：
+	  // https://ktgis.net/service/leafletlearn/index.html#step8
+    function init() {
+      var map = L.map('mapcontainer20210913', { zoomControl: false });
+      var mpoint = [35.6847,138.5852];
+      map.setView(mpoint, 14);
+      L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+        attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地理院タイル</a>"
+      }).addTo(map);
+      //北浦和駅の座標
+      var nurawasta = [35.701986, 138.595908];
+
+	  var latlngs = [[nurawasta[0], nurawasta[1]],
+	  				 [nurawasta[0], nurawasta[1] + 0.25],
+					 [nurawasta[0] + 0.2, nurawasta[1] + 0.25],
+					 [nurawasta[0] + 0.2, nurawasta[1]]];
+	  var polygon = L.polygon(latlngs, {color: '#bbbbdd', fill: true}).addTo(map);
+
+	  var eyeL = [35.821986, 138.669908];
+
+	  var latlngs = [[eyeL[0], eyeL[1]],
+	  				 [eyeL[0], eyeL[1] + 0.0115],
+					 [eyeL[0] + 0.010, eyeL[1] + 0.0115],
+					 [eyeL[0] + 0.010, eyeL[1]]];
+	  var polygon = L.polygon(latlngs, {color: '#000000', fill: true}).addTo(map);
+
+	  var eyeR = [35.821986, 138.760908];
+
+	  var latlngs = [[eyeR[0], eyeR[1]],
+	  				 [eyeR[0], eyeR[1] + 0.0115],
+					 [eyeR[0] + 0.010, eyeR[1] + 0.0115],
+					 [eyeR[0] + 0.010, eyeR[1]]];
+	  var polygon = L.polygon(latlngs, {color: '#000000', fill: true}).addTo(map);
+
+	  var legL = [35.701986, 138.669908];
+
+	  var latlngs = [[legL[0], legL[1]],
+	  				 [legL[0], legL[1] + 0.0115],
+					 [legL[0] - 0.070, legL[1] + 0.0315],
+					 [legL[0] - 0.070, legL[1] + 0.0215]];
+	  var polygon = L.polygon(latlngs, {color: '#000000', fill: true}).addTo(map);
+
+	  var legL = [35.701986, 138.769908];
+
+	  var latlngs = [[legL[0], legL[1]],
+	  				 [legL[0], legL[1] + 0.0115],
+					 [legL[0] - 0.070, legL[1] + 0.0315],
+					 [legL[0] - 0.070, legL[1] + 0.0215]];
+	  var polygon = L.polygon(latlngs, {color: '#000000', fill: true}).addTo(map);
+    }
+  </script>
+</head>
+<body onload="init()">
+  <div id="mapcontainer20210913" style="border: 2px solid #000000;width:600px;height:600px"></div>
+</body>
+</html>
