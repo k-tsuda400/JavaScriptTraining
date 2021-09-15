@@ -36,6 +36,7 @@ varying vec4        vColor;
 void main(void){
 	vec3 ref;
 	if(reflection){
+		// ガラス
 		ref = reflect(vPosition - eyePosition, vNormal * 0.45);
 	}else{
 		ref = vNormal;
