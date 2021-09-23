@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>HTML5 HelloWorld</title>
+<head>
+<body>
+<button id="play">play</button>
+<button id="stop">stop</button>
+<p>音程</p>
+<button id="ontei-minus">-</button>
+<button id="ontei-plus">+</button>
+<p>ビブラートの速さ</p>
+<button id="hz-minus">-</button>
+<button id="hz-plus">+</button>
+<p>ビブラートの深さ</p>
+<button id="depth-minus">-</button>
+<button id="depth-plus">+</button>
+<script>
+// 参考：
+// https://ics.media/entry/200427/
+onload = function(){
+    CreateSoundWave();
+};
+function CreateSoundWave(){
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+	const gainNode = ctx.createGain();
+
+	gainNode.gain.value = 0.5;
+
+    let oscillator;
+
+	const lfo = ctx.createOscillator();
+	const depth = ctx.createGain();
+	depth.gain.value = 50;
+	let isPlaying = false;
+
+    document.querySelector("#play").addEventListener("click", () =>{
+        // 再生中なら二重に再生されないようにする
+        if( isPlaying ) return;
+        oscillator = ctx.createOscillator()
+		oscillator.type = "sine";
+		// frequencyのvalueは直接代入も可能
+		oscillator.frequency.value = 440;
+
+		// lfoの波形をサイン派に
+		lfo.type = "sine";
+		// lfoの周波数を10Hzに設定
+		lfo.frequency.value = 0
+
+		// ここで出力にgainNodeをつなげる
+		oscillator.connect(gainNode).connect(ctx.destination);
+		oscillator.start();
+
+		// lfoを、depthを経由してオシレーターの周波数パラメータにつなげる
+		lfo.connect(depth).connect(oscillator.frequency);
+  		lfo.start();
+        isPlaying = true
+    });
+
+    // oscillatorを破棄し再生を停止する
+    document.querySelector("#stop").addEventListener("click", () =>{
+        // 注：ここのカッコゼロを忘れると止まってくれないバグ発生
+        oscillator?.stop(0);
+        isPlaying = false;
+    });
+
+	//オシレータの音程を直接指定
+	document.querySelector("#ontei-plus").addEventListener("click", () => {
+		if (oscillator.frequency.value < 1320) {
+			oscillator.frequency.value += 55;
+		}
+	});
+
+	document.querySelector("#ontei-minus").addEventListener("click", () => {
+		if (oscillator.frequency.value > 0) {
+			oscillator.frequency.value -= 55;
+		}
+	});
+
+	// ビブラートの速さを調節
+	document.querySelector("#hz-plus").addEventListener("click", () => {
+	lfo.frequency.value += 3
+	});
+
+	document.querySelector("#hz-minus").addEventListener("click", () => {
+	if (lfo.frequency.value > 3) {
+	lfo.frequency.value -= 3
+	}
+	});
+
+	//ビブラートの深さを調節
+	document.querySelector("#depth-plus").addEventListener("click", () => {
+	depth.gain.value += 5;
+	});
+
+	document.querySelector("#depth-minus").addEventListener("click", () => {
+	if (depth.gain.value > 5) {
+		depth.gain.value -= 5;
+	}
+	});
+}
+</script>
+</body>
+</html>
