@@ -1,0 +1,696 @@
+
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>WebGL Sample</title>
+<script src="https://wgld.org/j/minMatrixb.js" type="text/javascript"></script>
+
+<script id="svs" type="x-shader/x-vertex">
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec4 color;
+uniform   mat4 mvpMatrix;
+uniform   mat4 invMatrix;
+uniform   vec3 lightDirection;
+uniform   vec3 eyeDirection;
+uniform   vec4 ambientColor;
+varying   vec4 vColor;
+
+void main(void){
+	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;
+	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;
+	vec3  halfLE   = normalize(invLight + invEye);
+	float diffuse  = clamp(dot(normal, invLight), 0.0, 1.0);
+	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);
+	vec4  amb      = color * ambientColor;
+	vColor         = amb * vec4(vec3(diffuse), 1.0) + vec4(vec3(specular), 1.0);
+	gl_Position    = mvpMatrix * vec4(position, 1.0);
+}
+</script>
+
+<script id="sfs" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 vColor;
+
+void main(void){
+	gl_FragColor = vColor;
+}
+</script>
+
+<script id="cvs" type="x-shader/x-vertex">
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec4 color;
+uniform   mat4 mMatrix;
+uniform   mat4 mvpMatrix;
+varying   vec3 vPosition;
+varying   vec3 vNormal;
+varying   vec4 vColor;
+
+void main(void){
+	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;
+	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;
+	vColor      = color;
+	gl_Position = mvpMatrix * vec4(position, 1.0);
+}
+</script>
+
+<script id="cfs" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec3        eyePosition;
+uniform samplerCube cubeTexture;
+uniform bool        reflection;
+varying vec3        vPosition;
+varying vec3        vNormal;
+varying vec4        vColor;
+
+void main(void){
+	vec3 ref;
+	if(reflection){
+		ref = reflect(vPosition - eyePosition, vNormal);
+	}else{
+		ref = vNormal;
+	}
+	vec4 envColor  = textureCube(cubeTexture, ref);
+	vec4 destColor = vColor * envColor;
+	gl_FragColor   = destColor;
+}
+</script>
+
+</head>
+	<body>
+		<canvas id="canvas20210925"></canvas>
+	</body>
+<script>
+// sample_008
+//
+// 参考：https://wgld.org/d/webgl/w047.html
+
+var q = new qtnIV();
+var qt = q.identity(q.create());
+
+function mouseMove(e){
+	var cw = 256;
+	var ch = 256;
+	var wh = 1 / Math.sqrt(cw * cw + ch * ch);
+	// canvasの中心点から見た、マウスポインタの相対位置(x, y)
+	var x = e.clientX - cw * 0.5;
+	var y = e.clientY - ch * 0.5;
+	// xとyを正規化するために、距離を計算してる
+	var sq = Math.sqrt(x * x + y * y);
+	// 回転角
+	// @todo: なぜこの計算で成り立つか？特にwhは何か？を知りたい
+	var r = sq * 2.0 * Math.PI * wh;
+	// 正規化が不要な時は無視するif
+	// 正規化が必要なときは、xとyにベクトルの大きさをかけあわせる
+	if(sq != 1){
+		sq = 1 / sq;
+		x *= sq;
+		y *= sq;
+	}
+	// x, yを反転させることで「回転の軸ベクトル」を作ることができる
+	// 図にするとわかりやすい　参考：https://wgld.org/d/webgl/w033.html
+	q.rotate(r, [y, x, 0.0], qt);
+}
+
+onload = function(){
+	var c = document.getElementById('canvas20210925');
+	c.width = 256;
+	c.height = 256;
+
+	c.addEventListener('mousemove', mouseMove, true);
+
+	var eRange = document.getElementById('range');
+
+	var gl = c.getContext('webgl');
+	
+	// ライティング用
+	var v_shader = create_shader('svs');
+	var f_shader = create_shader('sfs');
+	var sPrg = create_program(v_shader, f_shader);
+	var sAttLocation = new Array();
+	sAttLocation[0] = gl.getAttribLocation(sPrg, 'position');
+	sAttLocation[1] = gl.getAttribLocation(sPrg, 'normal');
+	sAttLocation[2] = gl.getAttribLocation(sPrg, 'color');
+	var sAttStride = new Array();
+	sAttStride[0] = 3;
+	sAttStride[1] = 3;
+	sAttStride[2] = 4;
+	var sUniLocation = new Array();
+	sUniLocation[0] = gl.getUniformLocation(sPrg, 'mvpMatrix');
+	sUniLocation[1] = gl.getUniformLocation(sPrg, 'invMatrix');
+	sUniLocation[2] = gl.getUniformLocation(sPrg, 'lightDirection');
+	sUniLocation[3] = gl.getUniformLocation(sPrg, 'eyeDirection');
+	sUniLocation[4] = gl.getUniformLocation(sPrg, 'ambientColor');
+	
+	// キューブマッピング用（動的）
+	v_shader = create_shader('cvs');
+	f_shader = create_shader('cfs');
+	var cPrg = create_program(v_shader, f_shader);
+	var cAttLocation = new Array();
+	cAttLocation[0] = gl.getAttribLocation(cPrg, 'position');
+	cAttLocation[1] = gl.getAttribLocation(cPrg, 'normal');
+	cAttLocation[2] = gl.getAttribLocation(cPrg, 'color');
+	var cAttStride = new Array();
+	cAttStride[0] = 3;
+	cAttStride[1] = 3;
+	cAttStride[2] = 4;
+	var cUniLocation = new Array();
+	cUniLocation[0] = gl.getUniformLocation(cPrg, 'mMatrix');
+	cUniLocation[1] = gl.getUniformLocation(cPrg, 'mvpMatrix');
+	cUniLocation[2] = gl.getUniformLocation(cPrg, 'eyePosition');
+	cUniLocation[3] = gl.getUniformLocation(cPrg, 'cubeTexture');
+	cUniLocation[4] = gl.getUniformLocation(cPrg, 'reflection');
+	
+	var cubeData      = cube(2.0, [1.0, 1.0, 1.0, 1.0]);
+	var cPosition     = create_vbo(cubeData.p);
+	var cNormal       = create_vbo(cubeData.n);
+	var cColor        = create_vbo(cubeData.c);
+	var cVBOList      = [cPosition, cNormal, cColor];
+	var cIndex        = create_ibo(cubeData.i);
+
+	// 実際に表面が反射する球
+	var sphereData    = sphere(64, 64, 3.0, [1.0, 1.0, 1.0, 1.0]);
+	var sPosition     = create_vbo(sphereData.p);
+	var sNormal       = create_vbo(sphereData.n);
+	var sColor        = create_vbo(sphereData.c);
+	var sVBOList      = [sPosition, sNormal, sColor];
+	var sIndex        = create_ibo(sphereData.i);
+
+	// 映りこませるためのオブジェクト
+	var torusData     = sphere(4, 4, 1.0, [1.0, 1.0, 1.0, 1.0]);
+	var tPosition     = create_vbo(torusData.p);
+	var tNormal       = create_vbo(torusData.n);
+	var tColor        = create_vbo(torusData.c);
+	var tVBOList      = [tPosition, tNormal, tColor];
+	var tIndex        = create_ibo(torusData.i);
+	
+	var m = new matIV();
+	var mMatrix   = m.identity(m.create());
+	var vMatrix   = m.identity(m.create());
+	var pMatrix   = m.identity(m.create());
+	var tmpMatrix = m.identity(m.create());
+	var mvpMatrix = m.identity(m.create());
+	var invMatrix = m.identity(m.create());
+		
+	gl.enable(gl.DEPTH_TEST);
+	gl.depthFunc(gl.LEQUAL);
+
+	var cubeTexture = null;
+
+	var cubeSourse = new Array( 'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp',
+								'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp',
+								'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp',
+								'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp',
+								'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp',
+								'https://k-tsuda400.github.io/images/20210703/clouds1_up.bmp');
+	
+	var cubeTarget = new Array( gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+								gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+								gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+								gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+								gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+								gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+
+	create_cube_texture(cubeSourse, cubeTarget);
+	var eyePosition = [0.0, 0.0, 20.0];
+
+	var count = 0;
+
+	var fBufferWidth  = 256;
+	var fBufferHeight = 256;
+	var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight, cubeTarget);
+	
+	// ループ関数
+	(function(){
+		
+		count++;
+
+		var rad = (count % 360) * Math.PI / 180;
+
+		// 注視点
+		var eye = new Array();
+
+		// カメラの上方向
+		var camUp = new Array();
+
+		// モデルの座標位置
+		var pos = new Array();
+
+		// モデルに適用するカラー値
+		var amb = new Array();
+
+		// フレームバッファをバインド
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fBuffer.f);
+
+		// フレームバッファへの 6 方向レンダリング
+		for(var i = 0; i < cubeTarget.length; i++){
+			// フレームバッファにテクスチャを関連付ける
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, cubeTarget[i], fBuffer.t, 0);
+			
+			// フレームバッファを初期化
+			gl.clearColor(0.0, 0.0, 0.0, 1.0);
+			gl.clearDepth(1.0);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			
+			// ライトベクトル
+			var lightDirection = [-1.0, 1.0, 1.0];
+			
+			// 方角を判別して処理する
+			switch(cubeTarget[i]){
+				case gl.TEXTURE_CUBE_MAP_POSITIVE_X:
+					eye[i]   = [ 1,  0,  0];
+					camUp[i] = [ 0, -1,  0];
+					pos[i]   = [ 6,  0,  0];
+					amb[i]   = [1.0, 0.5, 0.5, 1.0];
+					break;
+				case gl.TEXTURE_CUBE_MAP_POSITIVE_Y:
+					eye[i]   = [ 0,  1,  0];
+					camUp[i] = [ 0,  0,  1];
+					pos[i]   = [ 0,  6,  0];
+					amb[i]   = [0.5, 1.0, 0.5, 1.0];
+					break;
+				case gl.TEXTURE_CUBE_MAP_POSITIVE_Z:
+					eye[i]   = [ 0,  0,  1];
+					camUp[i] = [ 0, -1,  0];
+					pos[i]   = [ 0,  0,  6];
+					amb[i]   = [0.5, 0.5, 1.0, 1.0];
+					break;
+				case gl.TEXTURE_CUBE_MAP_NEGATIVE_X:
+					eye[i]   = [-1,  0,  0];
+					camUp[i] = [ 0, -1,  0];
+					pos[i]   = [-6,  0,  0];
+					amb[i]   = [0.5, 0.0, 0.0, 1.0];
+					break;
+				case gl.TEXTURE_CUBE_MAP_NEGATIVE_Y:
+					eye[i]   = [ 0, -1,  0];
+					camUp[i] = [ 0,  0, -1];
+					pos[i]   = [ 0, -6,  0];
+					amb[i]   = [0.0, 0.5, 0.0, 1.0];
+					break;
+				case gl.TEXTURE_CUBE_MAP_NEGATIVE_Z:
+					eye[i]   = [ 0,  0, -1];
+					camUp[i] = [ 0, -1,  0];
+					pos[i]   = [ 0,  0, -6];
+					amb[i]   = [0.0, 0.0, 0.5, 1.0];
+					break;
+				default :
+					break;
+			}
+			
+			// ビュー×プロジェクション座標変換行列
+			m.lookAt([0, 0, 0], eye[i], camUp[i], vMatrix);
+			m.perspective(90, 1.0, 0.1, 200, pMatrix);
+			m.multiply(pMatrix, vMatrix, tmpMatrix);
+			
+			// キューブマップテクスチャで背景用キューブをレンダリング
+			gl.useProgram(cPrg);
+			set_attribute(cVBOList, cAttLocation, cAttStride);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cIndex);
+			m.identity(mMatrix);
+			m.scale(mMatrix, [100.0, 100.0, 100.0], mMatrix);
+			m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+			gl.uniformMatrix4fv(cUniLocation[0], false, mMatrix);
+			gl.uniformMatrix4fv(cUniLocation[1], false, mvpMatrix);
+			gl.uniform3fv(cUniLocation[2], [0, 0, 0]);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+			gl.uniform1i(cUniLocation[3], 0);
+			gl.uniform1i(cUniLocation[4], false);
+			gl.drawElements(gl.TRIANGLES, cubeData.i.length, gl.UNSIGNED_SHORT, 0);
+			
+			// 視線ベクトルの変換
+			var invEye = new Array();
+			invEye[0] = -eye[i][0];
+			invEye[1] = -eye[i][1];
+			invEye[2] = -eye[i][2];
+			
+			// スペキュラライティングシェーダでトーラスモデルをレンダリング
+			gl.useProgram(sPrg);
+			set_attribute(tVBOList, sAttLocation, sAttStride);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tIndex);
+			m.identity(mMatrix);
+			m.translate(mMatrix, pos[i], mMatrix);
+			m.rotate(mMatrix, rad, eye[i], mMatrix);
+			if (i % 2 == 0){
+				m.scale(mMatrix, [1.0 + 0.5 * (rad), 1.0 + 0.5 * (rad), 1.0 + 0.5 * (rad)], mMatrix);
+			}
+			m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+			m.inverse(mMatrix, invMatrix);
+			gl.uniformMatrix4fv(sUniLocation[0], false, mvpMatrix);
+			gl.uniformMatrix4fv(sUniLocation[1], false, invMatrix);
+			gl.uniform3fv(sUniLocation[2], lightDirection);
+			gl.uniform3fv(sUniLocation[3], invEye);
+			gl.uniform4fv(sUniLocation[4], amb[i]);
+			gl.drawElements(gl.TRIANGLES, torusData.i.length, gl.UNSIGNED_SHORT, 0);
+		}
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		// canvasを初期化（テクスチャに適用する方）
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+		var camUpDirection = new Array();
+		q.toVecIII([0.0, 0.0, 20.0], qt, eyePosition);
+		q.toVecIII([0.0, 1.0, 0.0], qt, camUpDirection);
+		m.lookAt(eyePosition, [0, 0, 0], camUpDirection, vMatrix);
+		m.perspective(45, c.width / c.height, 0.1, 200, pMatrix);
+		m.multiply(pMatrix, vMatrix, tmpMatrix);
+
+		gl.useProgram(cPrg);
+
+		// cube
+		set_attribute(cVBOList, cAttLocation, cAttStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cIndex);
+		m.identity(mMatrix);
+		m.scale(mMatrix, [100.0, 100.0, 100.0], mMatrix);
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		gl.uniformMatrix4fv(cUniLocation[0], false, mMatrix);
+		gl.uniformMatrix4fv(cUniLocation[1], false, mvpMatrix);
+		gl.uniform3fv(cUniLocation[2], eyePosition);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexture);
+		gl.uniform1i(cUniLocation[3], 0);
+		gl.uniform1i(cUniLocation[4], false);
+		gl.drawElements(gl.TRIANGLES, cubeData.i.length, gl.UNSIGNED_SHORT, 0);
+		
+		// sphere
+		set_attribute(sVBOList, cAttLocation, cAttStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIndex);
+		m.identity(mMatrix);
+		m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+		gl.uniformMatrix4fv(cUniLocation[0], false, mMatrix);
+		gl.uniformMatrix4fv(cUniLocation[1], false, mvpMatrix);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, fBuffer.t);
+		gl.uniform1i(cUniLocation[3], 0);
+		gl.uniform1i(cUniLocation[4], true);
+		gl.drawElements(gl.TRIANGLES, sphereData.i.length, gl.UNSIGNED_SHORT, 0);
+
+		gl.useProgram(sPrg);
+		set_attribute(tVBOList, sAttLocation, sAttStride);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, tIndex);
+		for(i = 0; i < cubeTarget.length; i++){
+			m.identity(mMatrix);
+			
+			m.translate(mMatrix, pos[i], mMatrix);
+			m.rotate(mMatrix, rad, eye[i], mMatrix);
+			if (i % 2 == 0){
+				m.scale(mMatrix, [1.0 + 0.5 * (rad), 1.0 + 0.5 * (rad), 1.0 + 0.5 * (rad)], mMatrix);
+			}
+			m.multiply(tmpMatrix, mMatrix, mvpMatrix);
+			m.inverse(mMatrix, invMatrix);
+			gl.uniformMatrix4fv(sUniLocation[0], false, mvpMatrix);
+			gl.uniformMatrix4fv(sUniLocation[1], false, invMatrix);
+			gl.uniform3fv(sUniLocation[2], lightDirection);
+			gl.uniform3fv(sUniLocation[3], eyePosition);
+			gl.uniform4fv(sUniLocation[4], amb[i]);
+			gl.drawElements(gl.TRIANGLES, torusData.i.length, gl.UNSIGNED_SHORT, 0);
+		}
+
+		// コンテキストの再描画
+		gl.flush();
+
+		let rotateSpeedChange = 200 + 50 * Math.sin(rad);
+		
+		// ループのために再帰呼び出し
+		setTimeout(arguments.callee, 1000 / rotateSpeedChange);
+	})();
+	
+	// シェーダーを作成
+	// (id で vertex-shader と fragment-shader を判別)
+	function create_shader(id){
+		var shader;
+		
+		// HTMLから、GLSLコードを獲得してくる
+		var scriptElement = document.getElementById(id);
+		
+		// もしGLSLコードが存在しなければ、終了
+		if(!scriptElement){return;}
+		
+		// 取ってきたGLSLコードのタイプを判別
+		switch(scriptElement.type){
+			
+			// vertex の場合
+			case 'x-shader/x-vertex':
+				shader = gl.createShader(gl.VERTEX_SHADER);
+				break;
+				
+			// fragment の場合
+			case 'x-shader/x-fragment':
+				shader = gl.createShader(gl.FRAGMENT_SHADER);
+				break;
+			default :
+				return;
+		}
+		
+		// 取ってきたGLSLコードを、シェーダーのソースコードとして反映
+		gl.shaderSource(shader, scriptElement.text);
+		
+		// シェーダーのソースコードをコンパイル
+		gl.compileShader(shader);
+		
+		// コンパイルが通るかチェック
+		if(gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
+			
+			// コンパイルが通ったので、shaderを返す
+			return shader;
+		}else{
+			
+			// コンパイルが通らなかったので、ログを出す
+			alert(gl.getShaderInfoLog(shader));
+			console.log(gl.getShaderInfoLog(shader));
+		}
+	}
+	
+	// 作成したシェーダーからプログラムを作成
+	function create_program(vs, fs){
+		var program = gl.createProgram();
+		
+		// アタッチ
+		gl.attachShader(program, vs);
+		gl.attachShader(program, fs);
+		
+		// リンク
+		gl.linkProgram(program);
+		
+		if(gl.getProgramParameter(program, gl.LINK_STATUS)){
+		
+			gl.useProgram(program);
+			
+			return program;
+		}else{
+			// リンク失敗時はnullを返す
+			return null;
+		}
+	}
+	
+	// 頂点バッファ(VBO)を生成する関数
+	// https://wgld.org/d/webgl/w014.html
+	function create_vbo(data){
+		// バッファオブジェクトの生成
+		var vbo = gl.createBuffer();
+		
+		// バッファをバインドする
+		gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+		
+		// バッファにデータをセット
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+		
+		// バッファのバインドを無効化
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+		
+		// 生成した VBO を返して終了
+		return vbo;
+	}
+	
+	// VBOをバインドし登録する
+	function set_attribute(vbo, attL, attS){
+		// VBOの種類の数だけループを回す（今回は１．位置情報　２．色情報）
+		for(var i in vbo){
+			// VBOをバインド
+			gl.bindBuffer(gl.ARRAY_BUFFER, vbo[i]);
+			gl.enableVertexAttribArray(attL[i]);
+			gl.vertexAttribPointer(attL[i], attS[i], gl.FLOAT, false, 0, 0);
+		}
+		// ポインタで指定してあげてるので、返り値は無い（attribute変数の中身は既に変更されてる）
+	}
+
+	// インデックスバッファ(IBO)を生成する関数
+	// https://wgld.org/d/webgl/w018.html
+	function create_ibo(data){
+		// バッファオブジェクトの生成
+		var ibo = gl.createBuffer();
+		
+		// バッファをバインドする
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+		
+		// バッファにデータをセット
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(data), gl.STATIC_DRAW);
+		
+		// バッファのバインドを無効化
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+		
+		// 生成したIBOを返して終了
+		return ibo;
+	}
+
+	// フレームバッファをオブジェクトとして生成する関数(キューブマップ仕様)
+	function create_framebuffer(width, height, target){
+		// フレームバッファの生成
+		var frameBuffer = gl.createFramebuffer();
+
+		// フレームバッファをWebGLにバインド
+		gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+		// 深度バッファ用レンダーバッファの生成とバインド
+		var depthRenderBuffer = gl.createRenderbuffer();
+		gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+
+		// レンダーバッファを深度バッファとして設定
+		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+
+		// フレームバッファにレンダーバッファを関連付ける
+		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
+
+		// フレームバッファ用テクスチャの生成
+		var fTexture = gl.createTexture();
+
+		// フレームバッファ用のテクスチャをキューブマップテクスチャとしてバインド
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, fTexture);
+
+		// フレームバッファ用のテクスチャにカラー用のメモリ領域を 6 面分確保
+		for(var i = 0; i < target.length; i++){
+			gl.texImage2D(target[i], 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		}
+
+		// テクスチャパラメータ
+		gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+		// 各種オブジェクトのバインドを解除
+		gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+		gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		// オブジェクトを返して終了
+		return {f : frameBuffer, d : depthRenderBuffer, t : fTexture};
+	}
+
+	// キューブマップテクスチャを生成する関数
+	function create_cube_texture(source, target){
+		// インスタンス用の配列
+		var cImg = new Array();
+		
+		for(var i = 0; i < source.length; i++){
+			// インスタンスの生成
+			cImg[i] = new cubeMapImage();
+			
+			// イメージオブジェクトのソースを指定
+			cImg[i].data.src = source[i];
+		}
+    
+		// キューブマップ用イメージのコンストラクタ
+		function cubeMapImage(){
+			// イメージオブジェクトを格納
+			this.data = new Image();
+			this.data.crossOrigin = "anonymous";
+			
+			// イメージロードをトリガーにする
+			this.data.onload = function(){
+				// プロパティを真にする
+				this.imageDataLoaded = true;
+				
+				// チェック関数を呼び出す
+				checkLoaded();
+			};
+		}
+		
+		// イメージロード済みかチェックする関数
+		function checkLoaded(){
+			// 全てロード済みならキューブマップを生成する関数を呼び出す
+			if( cImg[0].data.imageDataLoaded &&
+				cImg[1].data.imageDataLoaded &&
+				cImg[2].data.imageDataLoaded &&
+				cImg[3].data.imageDataLoaded &&
+				cImg[4].data.imageDataLoaded &&
+				cImg[5].data.imageDataLoaded){generateCubeMap();}
+		}
+		
+		// キューブマップを生成する関数
+		function generateCubeMap(){
+			// テクスチャオブジェクトの生成
+			var tex = gl.createTexture();
+			
+			// テクスチャをキューブマップとしてバインドする
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+			
+			// ソースを順に処理する
+			for(var j = 0; j < source.length; j++){
+				// テクスチャへイメージを適用
+				gl.texImage2D(target[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cImg[j].data);
+			}
+			
+			// ミップマップを生成
+			gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+			
+			// テクスチャパラメータの設定
+			gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			
+			// キューブマップテクスチャを変数に代入
+			cubeTexture = tex;
+			
+			// テクスチャのバインドを無効化
+			gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+		}
+	}
+
+
+	// =====================================
+	function sphere(row, column, rad, color){
+		var pos = new Array(), nor = new Array(),
+			col = new Array(), st  = new Array(), idx = new Array();
+		for(var i = 0; i <= row; i++){
+			var r = Math.PI / row * i;
+			var ry = Math.cos(r);
+			var rr = Math.sin(r);
+			for(var ii = 0; ii <= column; ii++){
+				var tr = Math.PI * 2 / column * ii;
+				var tx = rr * rad * Math.cos(tr);
+				var ty = ry * rad;
+				var tz = rr * rad * Math.sin(tr);
+				var rx = rr * Math.cos(tr);
+				var rz = rr * Math.sin(tr);
+				if(color){
+					var tc = color;
+				}else{
+					tc = hsva(360 / row * i, 1, 1, 1);
+				}
+				pos.push(tx, ty, tz);
+				nor.push(rx, ry, rz);
+				col.push(tc[0], tc[1], tc[2], tc[3]);
+				st.push(1 - 1 / column * ii, 1 / row * i);
+			}
+		}
+		r = 0;
+		for(i = 0; i < row; i++){
+			for(ii = 0; ii < column; ii++){
+				r = (column + 1) * i + ii;
+				idx.push(r, r + 1, r + column + 2);
+				idx.push(r, r + column + 2, r + column + 1);
+			}
+		}
+		return {p : pos, n : nor, c : col, t : st, i : idx};
+	}
+};
+</script>
+</html>
