@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>HTML5 HelloWorld</title>
+<head>
+<style>
+	#white li {
+		display: inline-block;
+		width:5px;
+  		height: 60px;
+		padding: 0.5em;
+		background: #ccc;
+	}
+	#white li:active {
+		display: inline-block;
+		width:5px;
+  		height: 60px;
+		padding: 0.5em;
+		background: #eee;
+	}
+	#black li {
+		display: inline-block;
+		width:2px;
+  		height: 20px;
+		padding: 0.5em;
+		background: #224;
+	}
+	#black li:active {
+		display: inline-block;
+		width:2px;
+  		height: 20px;
+		padding: 0.5em;
+		background: #88A;
+	}
+</style>
+<body>
+	<div id="page">
+        <div class="clearfix">
+            <p>ディレイ (サウンド) | エフェクター</p>
+            <fieldset class="controllers-2-column">
+                <dl>
+                    <dt><label for="range-volume">VOLUME : <span id="output-volume">1</span></label></dt>
+                    <dd><input type="range" id="range-volume" value="1" min="0" max="1" step="0.05" /></dd>
+                    <dt>WAVE TYPE</dt>
+                    <dd>
+                        <form id="form-wave-type" name="form-wave-type">
+                            <label><input type="radio" name="radio-wave-type" value="sine" checked />SINE</label>
+                            <label><input type="radio" name="radio-wave-type" value="square"       />SQUARE</label>
+                            <label><input type="radio" name="radio-wave-type" value="sawtooth"     />SAW</label>
+                            <label><input type="radio" name="radio-wave-type" value="triangle"     />TRIANGLE</label>
+                        </form>
+                    </dd>
+                </dl>
+            </fieldset>
+            <fieldset class="controllers-2-column">
+                <dl>
+                    <dt><label for="range-delay-time">DELAY TIME : <span id="output-delay-time">0</span> sec</label></dt>
+                    <dd><input type="range" id="range-delay-time" value="0" min="0" max="1" step="0.01" /></dd>
+                    <dt><label for="range-delay-dry">DRY : <span id="output-delay-dry">1</span></label></dt>
+                    <dd><input type="range" id="range-delay-dry" value="1" min="0" max="1" step="0.05" /></dd>
+                    <dt><label for="range-delay-wet">WET : <span id="output-delay-wet">0</span></label></dt>
+                    <dd><input type="range" id="range-delay-wet" value="0" min="0" max="1" step="0.05" /></dd>
+                    <dt><label for="range--delay-feedback">FEEDBACK : <span id="output-delay-feedback">0</span></label></dt>
+                    <dd><input type="range" id="range-delay-feedback" value="0" min="0" max="0.9" step="0.05" /></dd>
+                </dl>
+            </fieldset>
+        </div>
+        <div id="piano">
+            <ul id="black" class="clearfix">
+                <li id="A-4h" class="key-off"></li>
+                <li class="skip"></li>
+                <li id="C-3h" class="key-off"></li>
+                <li id="D-3h" class="key-off"></li>
+                <li class="skip"></li>
+                <li id="F-3h" class="key-off"></li>
+                <li id="G-3h" class="key-off"></li>
+                <li id="A-3h" class="key-off"></li>
+                <li class="skip"></li>
+                <li id="C-2h" class="key-off"></li>
+                <li id="D-2h" class="key-off"></li>
+                <li class="skip"></li>
+                <li id="F-2h" class="key-off"></li>
+                <li id="G-2h" class="key-off"></li>
+                <li id="A-2h" class="key-off max1259"></li>
+                <li class="skip max1259"></li>
+                <li id="C-1h" class="key-off max1259"></li>
+                <li id="D-1h" class="key-off max1259"></li>
+                <li class="skip max1259"></li>
+                <li id="F-1h" class="key-off max1259"></li>
+                <li id="G-1h" class="key-off max1259"></li>
+                <li id="A-1h" class="key-off max767"></li>
+                <li class="skip max767"></li>
+                <li id="Ch"   class="key-off max767"></li>
+                <li id="Dh"   class="key-off max767"></li>
+                <li class="skip max767"></li>
+                <li id="Fh"   class="key-off max767"></li>
+                <li id="Gh"   class="key-off max767"></li>
+                <li id="Ah"   class="key-off max767"></li>
+                <li class="skip max767"></li>
+                <li id="C1h"  class="key-off max1259"></li>
+                <li id="D1h"  class="key-off max1259"></li>
+                <li class="skip max767"></li>
+                <li id="F1h"  class="key-off max1259"></li>
+                <li id="G1h"  class="key-off max1259"></li>
+                <li id="A1h"  class="key-off max1259"></li>
+                <li class="skip"></li>
+                <li id="C2h"   class="key-off"></li>
+                <li id="D2h"   class="key-off"></li>
+                <li class="skip"></li>
+                <li id="F2h"   class="key-off"></li>
+                <li id="G2h"   class="key-off"></li>
+                <li id="A2h"   class="key-off"></li>
+                <li class="skip"></li>
+                <li id="C3h"  class="key-off"></li>
+                <li id="D3h"  class="key-off"></li>
+                <li class="skip"></li>
+                <li id="F3h"  class="key-off"></li>
+                <li id="G3h"  class="key-off"></li>
+                <li id="A3h"  class="key-off"></li>
+                <li class="skip"></li>
+            </ul>
+			<ul id="white" class="clearfix">
+                <li id="A-4" class="key-off"></li>
+                <li id="B-4" class="key-off"></li>
+                <li id="C-3" class="key-off"></li>
+                <li id="D-3" class="key-off"></li>
+                <li id="E-3" class="key-off"></li>
+                <li id="F-3" class="key-off"></li>
+                <li id="G-3" class="key-off"></li>
+                <li id="A-3" class="key-off"></li>
+                <li id="B-3" class="key-off"></li>
+                <li id="C-2" class="key-off"></li>
+                <li id="D-2" class="key-off"></li>
+                <li id="E-2" class="key-off"></li>
+                <li id="F-2" class="key-off"></li>
+                <li id="G-2" class="key-off"></li>
+                <li id="A-2" class="key-off max1259"></li>
+                <li id="B-2" class="key-off max1259"></li>
+                <li id="C-1" class="key-off max1259"></li>
+                <li id="D-1" class="key-off max1259"></li>
+                <li id="E-1" class="key-off max1259"></li>
+                <li id="F-1" class="key-off max1259"></li>
+                <li id="G-1" class="key-off max1259"></li>
+                <li id="A-1" class="key-off max767"></li>
+                <li id="B-1" class="key-off max767"></li>
+                <li id="C"   class="key-off max767"></li>
+                <li id="D"   class="key-off max767"></li>
+                <li id="E"   class="key-off max767"></li>
+                <li id="F"   class="key-off max767"></li>
+                <li id="G"   class="key-off max767"></li>
+                <li id="A"   class="key-off max767"></li>
+                <li id="B"   class="key-off max767"></li>
+                <li id="C1"  class="key-off max767"></li>
+                <li id="D1"  class="key-off max1259"></li>
+                <li id="E1"  class="key-off max1259"></li>
+                <li id="F1"  class="key-off max1259"></li>
+                <li id="G1"  class="key-off max1259"></li>
+                <li id="A1"  class="key-off max1259"></li>
+                <li id="B1"  class="key-off max1259"></li>
+                <li id="C2"  class="key-off max1259"></li>
+                <li id="D2"  class="key-off"></li>
+                <li id="E2"  class="key-off"></li>
+                <li id="F2"  class="key-off"></li>
+                <li id="G2"  class="key-off"></li>
+                <li id="A2"  class="key-off"></li>
+                <li id="B2"  class="key-off"></li>
+                <li id="C3"  class="key-off"></li>
+                <li id="D3"  class="key-off"></li>
+                <li id="E3"  class="key-off"></li>
+                <li id="F3"  class="key-off"></li>
+                <li id="G3"  class="key-off"></li>
+                <li id="A3"  class="key-off"></li>
+                <li id="B3"  class="key-off"></li>
+                <li id="C4"  class="key-off"></li>
+            </ul>
+        </div>
+        <!-- /piano -->
+<script>
+// 参考：
+// https://weblike-curtaincall.ssl-lolipop.jp/portfolio-web-sounder/webaudioapi-effectors/delay-reverb
+
+// CSS参考：
+// https://maku77.github.io/web/menu/vertical-and-horizontal.html
+(function() {
+ 
+    var onDOMContentLoaded = function() {
+ 
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+ 
+        try {
+            // Create the instance of AudioContext
+            var context = new AudioContext();
+        } catch (error) {
+            window.alert(error.message + ' : Please use Chrome or Safari.');
+            return;
+        }
+ 
+        var displayProperties = function(node, tableid, caption) {
+            var html = '<caption>' + caption + '</caption>';
+ 
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th scope="col">Property</th>';
+            html += '<th scope="col">Value</th>';
+            html += '<th scope="col">hasOwnProperty</th>';
+            html += '</tr>';
+            html += '</thead>';
+ 
+            html += '<tbody>';
+ 
+            for (var key in node) {
+                html += '<tr>';
+                html += '<td>' + key + '</td>';
+                html += '<td>' + node[key] + '</td>';
+                html += '<td>' + node.hasOwnProperty(key) + '</td>';
+                html += '</tr>';
+            }
+ 
+            html += '</tbody>';
+ 
+            document.getElementById(tableid).innerHTML = html;
+            document.getElementById(tableid).parentNode.previousElementSibling.style.display = 'block';
+        };
+ 
+        // Create the instance of OscillatorNode
+        var oscillator = context.createOscillator();
+ 
+        // Parameter for the instance of OscillatorNode
+        var type = oscillator.type;
+ 
+        // for legacy browsers
+        context.createGain = context.createGain || context.createGainNode;
+ 
+        // Create the instance of GainNode (for Master Volume)
+        var gain = context.createGain();
+ 
+        // Delay
+ 
+        // for legacy browsers
+        context.createDelay = context.createDelay || context.createDelayNode;
+ 
+        var MAX_DELAY_TIME = 1;
+ 
+        // Create the instance of DelayNode
+        var delay = context.createDelay(MAX_DELAY_TIME);
+ 
+        // Create the instance of GainNode (for Delay)
+        var dry      = context.createGain();
+        var wet      = context.createGain();
+        var feedback = context.createGain();
+ 
+        // Initialize parameters for Delay
+        delay.delayTime.value = document.getElementById('range-delay-time').valueAsNumber;
+        dry.gain.value        = document.getElementById('range-delay-dry').valueAsNumber;
+        wet.gain.value        = document.getElementById('range-delay-wet').valueAsNumber;
+        feedback.gain.value   = document.getElementById('range-delay-feedback').valueAsNumber;
+ 
+        // Flag for starting or stopping sound
+        var isStop = true;
+ 
+        /*
+         * Event Listener
+         */
+ 
+        // Start or Stop sound
+        var PIANO_88S = [
+                        'A-4', 'A-4h', 'B-4',
+                        'C-3', 'C-3h', 'D-3', 'D-3h', 'E-3', 'F-3', 'F-3h', 'G-3', 'G-3h', 'A-3', 'A-3h', 'B-3',
+                        'C-2', 'C-2h', 'D-2', 'D-2h', 'E-2', 'F-2', 'F-2h', 'G-2', 'G-2h', 'A-2', 'A-2h', 'B-2',
+                        'C-1', 'C-1h', 'D-1', 'D-1h', 'E-1', 'F-1', 'F-1h', 'G-1', 'G-1h', 'A-1', 'A-1h', 'B-1',
+                        'C',   'Ch',   'D',   'Dh',   'E',   'F',   'Fh',   'G',   'Gh',   'A',   'Ah',   'B',
+                        'C1',  'C1h',  'D1',  'D1h',  'E1',  'F1',  'F1h',  'G1',  'G1h',  'A1',  'A1h',  'B1',
+                        'C2',  'C2h',  'D2',  'D2h',  'E2',  'F2',  'F2h',  'G2',  'G2h',  'A2',  'A2h',  'B2',
+                        'C3',  'C3h',  'D3',  'D3h',  'E3',  'F3',  'F3h',  'G3',  'G3h',  'A3',  'A3h',  'B3',
+                        'C4'
+                        ];
+ 
+        var pianoKeys = Array.prototype.slice.call(document.querySelectorAll('#piano ul li'), 0);
+ 
+        var convertIndex = function(index) {
+            //
+            // The 12 equal temparement
+            //
+            // Min -> A 27.5Hz, Max -> C 4186 Hz
+            //
+            // Example :
+            //    A * 1.059463 -> A# (half up)
+            //
+            var FREQUENCY_RATIO = Math.pow(2, (1 / 12));  // about 1.059463;
+            var MIN_A           = 27.5;
+ 
+            return (MIN_A * Math.pow(FREQUENCY_RATIO, index));
+        };
+ 
+        pianoKeys.forEach(function(element, index, array) {
+            // Start sound
+            element.addEventListener('mousedown', function(event) {
+                if (!isStop) {
+                    oscillator.stop(0);
+                }
+ 
+                var pianoIndex = PIANO_88S.indexOf(this.id);
+                var frequency  = convertIndex(pianoIndex);
+ 
+                // Create the instance of OscillatorNode
+                oscillator = context.createOscillator();
+ 
+                // for legacy browsers
+                oscillator.start = oscillator.start || oscillator.noteOn;
+                oscillator.stop  = oscillator.stop  || oscillator.noteOff;
+ 
+                // GainNode (Master Volume) -> AudioDestinationNode (Output)
+                gain.connect(context.destination);
+ 
+                // Connect nodes for original sound
+                // OscillatorNode (Input) -> GainNode (Dry) -> GainNode (Master Volume) (-> AudioDestinationNode (Output))
+                oscillator.connect(dry);
+                dry.connect(gain);
+ 
+                // Connect nodes for effect (Delay) sound
+                // OscillatorNode (Input) -> DelayNode (Delay) -> GainNode (Wet) -> GainNode (Master Volume) (-> AudioDestinationNode (Output))
+                oscillator.connect(delay);
+                delay.connect(wet);
+                wet.connect(gain);
+ 
+                // Connect nodes for Feedback
+                // (OscillatorNode (Input) ->) DelayNode (Delay) -> GainNode (Feedback) -> DelayNode (Delay) -> ...
+                delay.connect(feedback);
+                feedback.connect(delay);
+ 
+                // Set parameters
+                oscillator.type            = type;
+                oscillator.frequency.value = frequency;
+ 
+                oscillator.start(0);
+ 
+                isStop = false;
+                this.classList.remove('key-off');
+                this.classList.add('key-on');
+            }, false);
+ 
+            // Stop sound
+            element.addEventListener('mouseup', function() {
+                if (isStop) {
+                    return;
+                }
+ 
+                oscillator.stop(0);
+ 
+                isStop = true;
+                this.classList.remove('key-on');
+                this.classList.add('key-off');
+            }, false);
+        });
+ 
+        // Control Master Volume
+        document.getElementById('range-volume').addEventListener('input', function() {
+            var min = gain.gain.minValue || 0;
+            var max = gain.gain.maxValue || 1;
+ 
+            if ((this.valueAsNumber >= min) && (this.valueAsNumber <= max)) {
+                gain.gain.value = this.valueAsNumber;
+                document.getElementById('output-volume').textContent = this.value;
+            }
+        }, false);
+ 
+        // Select type
+        document.getElementById('form-wave-type').addEventListener('change', function() {
+            for (var i = 0, len = this.elements['radio-wave-type'].length; i < len; i++) {
+                if (this.elements['radio-wave-type'][i].checked) {
+                    oscillator.type = type = (typeof oscillator.type === 'string') ? this.elements['radio-wave-type'][i].value : i;
+                    break;
+                }
+            }
+        }, false);
+ 
+        // Control delayTime
+        document.getElementById('range-delay-time').addEventListener('input', function() {
+            var min = delay.delayTime.minValue || 0;
+            var max = delay.delayTime.maxValue || 1;
+ 
+            if ((this.valueAsNumber >= min) && (this.valueAsNumber <= max)) {
+                delay.delayTime.value = this.valueAsNumber;
+                document.getElementById('output-delay-time').textContent = this.value;
+                displayProperties(delay.delayTime, 'delaynode-delaytime-properties', 'delayTime (AudioParam) ');
+            }
+        }, false);
+ 
+        // Control Delay Dry
+        document.getElementById('range-delay-dry').addEventListener('input', function() {
+            var min = dry.gain.minValue || 0;
+            var max = dry.gain.maxValue || 1;
+ 
+            if ((this.valueAsNumber >= min) && (this.valueAsNumber <= max)) {
+                dry.gain.value = this.valueAsNumber;
+                document.getElementById('output-delay-dry').textContent = this.value;
+            }
+        }, false);
+ 
+        // Control Delay Wet
+        document.getElementById('range-delay-wet').addEventListener('input', function() {
+            var min = wet.gain.minValue || 0;
+            var max = wet.gain.maxValue || 1;
+ 
+            if ((this.valueAsNumber >= min) && (this.valueAsNumber <= max)) {
+                wet.gain.value = this.valueAsNumber;
+                document.getElementById('output-delay-wet').textContent = this.value;
+            }
+        }, false);
+ 
+        // Control Delay Feedback
+        document.getElementById('range-delay-feedback').addEventListener('input', function() {
+            var min = feedback.gain.minValue || 0;
+            var max = feedback.gain.maxValue || 1;
+ 
+            if ((this.valueAsNumber >= min) && (this.valueAsNumber <= max)) {
+                feedback.gain.value = this.valueAsNumber;
+                document.getElementById('output-delay-feedback').textContent = this.value;
+            }
+        }, false);
+ 
+        /*
+         * Display properties
+         */
+ 
+        displayProperties(delay,           'delaynode-properties',           'DelayNode');
+        displayProperties(delay.delayTime, 'delaynode-delaytime-properties', 'delayTime (AudioParam) ');
+    };
+ 
+    if ((document.readyState === 'interactive') || (document.readyState === 'complete')) {
+        onDOMContentLoaded();
+    } else {
+        document.addEventListener('DOMContentLoaded', onDOMContentLoaded, true);
+    }
+ 
+})();
+
+</script>
+</body>
+</html>
