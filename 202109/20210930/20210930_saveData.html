@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <title>My Sample Game</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    </head>
+ 
+    <body>
+        <!-- 以下追記部分 -->
+        <button onclick="saveData()">SAVE</button>
+        <button onclick="loadData()">LOAD</button>
+        <!-- 以上追記部分 -->
+        <div id="jvs20210930" style="position:absolute;border: 1px #000 solid;width:30px;height:30px;border-radius: 50%;">
+        </div>
+ 
+        <script>
+        // 参考：
+        // コード大元
+        // https://mokabuu.com/it/javascript/【javascript】localstorageを利用してセーブ機能擬きを作る〜rpg作
+        //
+        // 矢印キーが反応しない問題
+        // https://1-notes.com/javascript-addeventlistener-key-ivent/
+            let startLeft = 0;
+            let startRight = 0;
+            let startTop = 0;
+            let startBottom = 0;
+
+            window = document.getElementById("jvs20210930");
+            window.addEventListener('keydown',KeyPress,true);
+ 
+            function KeyPress(event){
+                var jvs20210930 = document.getElementById("jvs20210930");
+ 
+                var code = event.keyCode;
+                var left = (jvs20210930.style.left).match(/\d+/g);
+                var top = (jvs20210930.style.top).match(/\d+/g);
+
+                switch(code){
+                    case 65://A
+                        jvs20210930.style.left = left - 10;
+                        startLeft = 5;
+                        startRight = 0;
+                        break;
+                    case 68://D
+                        jvs20210930.style.left = left - -10;
+                        startLeft = 0;
+                        startRight = 5;
+                        break;
+                    case 87://W
+                        jvs20210930.style.top = top - 10;
+                        startTop = 5;
+                        startBottom = 0;
+                        break;
+                    case 83://S
+                        jvs20210930.style.top = top - -10;
+                        startTop = 0;
+                        startBottom= 5;
+                        break;
+                }
+                if (startLeft > 0){
+                    startLeft--;
+                    jvs20210930.style.left = left - 3;
+                } if (startRight > 0){
+                    startRight--;
+                    jvs20210930.style.left = left - - 3;
+                } if (startTop > 0){
+                    startTop--;
+                    jvs20210930.style.top = top -3;
+                } if (startBottom > 0){
+                    startBottom--;
+                    jvs20210930.style.top = top - - 3;
+                }
+                stateStr.innerText = ``;
+            }
+ 
+            function start(){
+                var jvs20210930 = document.getElementById("jvs20210930");
+ 
+                jvs20210930.style.left = 0;
+                jvs20210930.style.top = 0;
+            }
+            window.onload = start();
+            const stateStr = document.createElement('div');
+            document.body.appendChild(stateStr);
+ 
+            /*** 以下追記部分 ***/
+            function saveData(){
+                var jvs20210930 = document.getElementById("jvs20210930");
+                localStorage.clear();
+ 
+                localStorage.left = jvs20210930.style.left;
+                localStorage.top = jvs20210930.style.top;
+ 
+                stateStr.innerText = `セーブ完了`;
+            }
+ 
+            function loadData(){
+                var jvs20210930 = document.getElementById("jvs20210930");
+ 
+                jvs20210930.style.left = localStorage.left;
+                jvs20210930.style.top = localStorage.top;
+
+                stateStr.innerText = `ロード完了`;
+            }
+
+            
+            /*** 以上追記部分 ***/
+        </script>
+    </body>
+</html>
