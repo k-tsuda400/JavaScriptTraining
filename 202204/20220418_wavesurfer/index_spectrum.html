@@ -1,0 +1,174 @@
+<!-- waveSurfer.でEqualizer　cited from: https://wavesurfer-js.org/example/cursor/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Waveform using bars (custom)</title>
+    <!-- Bootstrap -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- wavesurfer.js -->
+    <script src="https://unpkg.com/wavesurfer.js/dist/wavesurfer.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.cursor.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.spectrogram.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="waveform">
+            <!-- Here be the waveform -->
+        </div>
+
+        <div class="controls">
+            <div class="row">
+                <button class="btn btn-primary" data-action="play">
+                    <i class="glyphicon glyphicon-play"></i>
+                    再生 /
+                    <i class="glyphicon glyphicon-pause"></i>
+                    一時停止
+                </button>
+            </div>
+            <div id="wave-spectrogram"></div>
+                <!-- Here be equalizer sliders -->
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    // Create an instance
+    let wavesurfer = {};
+
+    // Init & load audio file
+    document.addEventListener('DOMContentLoaded', function() {
+        wavesurfer = WaveSurfer.create({
+            container: document.querySelector('#waveform'),
+            plugins: [
+                WaveSurfer.cursor.create({
+                    showTime: true,
+                    opacity: 1,
+                    customShowTimeStyle: {
+                        'background-color': '#000',
+                        color: '#fff',
+                        padding: '2px',
+                        'font-size': '10px'
+                    }
+                })
+            ],
+            plugins: [
+                WaveSurfer.spectrogram.create({
+                    wavesurfer: wavesurfer,
+                    container: "#wave-spectrogram",
+                    labels: true
+                })// hot-colormap.jsonの呼び出しに失敗しているので、スペクトラムはモノクロ表示になってる
+            ],
+            barWidth: 2,
+            barHeight: 1,
+            barGap: null,
+            progressColor: "#ea5506",
+            waveColor: "#bbbbbb",
+            
+        });
+    
+        wavesurfer.on('error', function(e) {
+            console.warn(e);
+        });
+    
+        // Load audio from URL
+        wavesurfer.load('https://k-tsuda400.github.io/files/20220305/test.mp3');
+    
+        // Equalizer
+        wavesurfer.on('ready', function() {
+            let EQ = [
+                {
+                    f: 32,
+                    type: 'lowshelf'
+                },
+                {
+                    f: 64,
+                    type: 'peaking'
+                },
+                {
+                    f: 125,
+                    type: 'peaking'
+                },
+                {
+                    f: 250,
+                    type: 'peaking'
+                },
+                {
+                    f: 500,
+                    type: 'peaking'
+                },
+                {
+                    f: 1000,
+                    type: 'peaking'
+                },
+                {
+                    f: 2000,
+                    type: 'peaking'
+                },
+                {
+                    f: 4000,
+                    type: 'peaking'
+                },
+                {
+                    f: 8000,
+                    type: 'peaking'
+                },
+                {
+                    f: 16000,
+                    type: 'highshelf'
+                }
+            ];
+
+            // Create filters
+            let filters = EQ.map(function(band) {
+                let filter = wavesurfer.backend.ac.createBiquadFilter();
+                filter.type = band.type;
+                filter.gain.value = 0;
+                filter.Q.value = 1;
+                filter.frequency.value = band.f;
+                return filter;
+            });
+
+            // Connect filters to wavesurfer
+            wavesurfer.backend.setFilters(filters);
+
+            // Bind filters to vertical range sliders
+            let container = document.querySelector('#equalizer');
+            filters.forEach(function(filter) {
+                let input = document.createElement('input'); //< ここでEqualizer用のinput要素作成
+                Object.assign(input, {
+                    type: 'range',
+                    min: -40,
+                    max: 40,
+                    value: 0,
+                    title: filter.frequency.value
+                });
+                input.style.display = 'inline-block';
+                input.setAttribute('orient', 'vertical');
+                wavesurfer.util.style(input, {
+                    webkitAppearance: 'slider-vertical',
+                    width: '50px',
+                    height: '150px'
+                });
+                container.appendChild(input);
+
+                let onChange = function(e) {
+                    filter.gain.value = ~~e.target.value;
+                };
+
+                input.addEventListener('input', onChange);
+                input.addEventListener('change', onChange);
+            });
+
+            // For debugging
+            wavesurfer.filters = filters;
+        });
+
+        // Play button
+        const button = document.querySelector('[data-action="play"]');
+        button.addEventListener('click', wavesurfer.playPause.bind(wavesurfer));
+    });
+    </script>
+</html>
