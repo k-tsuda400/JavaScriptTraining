@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BabylonJS Demo</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <style>
+        #canvas{
+            width:512px;
+            height:512px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id ="canvas"></canvas>
+</body>
+<script>
+// はじめの一歩を参考にした
+// https://zenn.dev/yishizu/articles/d1171ac33d710a
+
+// 本当に最低限のシーン作成なら、このサイトが参考になる
+// https://qiita.com/il-m-yamagishi/items/fa0460830de7a17a8f89
+
+// HTMLのcanvas要素を取得
+const canvas = document.getElementById("canvas");
+// create BabylonJs engine
+const engine = new BABYLON.Engine(canvas, true);
+
+const createScene =  () => {
+    const scene = new BABYLON.Scene(engine);
+
+    // 背景色: #XXXXXX で指定
+    // 参考：https://www.html5gamedevs.com/topic/23298-how-to-translate-rgb-color-to-new-babyloncolor3x-x-x/
+    scene.clearColor = new BABYLON.Color3.FromHexString("#303030");
+
+    const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0, 0));
+    // attachControlを宣言することで、入力によるカメラの視点移動などが有効となる
+    //camera.attachControl(canvas, true);
+
+    // 光源の指定
+    const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0));
+
+    // 箱の色を指定(面ごとに指定できる)
+    // 6面すべてを白とした
+    // 参考：https://qiita.com/nobuyuki-ishii/items/7a033942416283f3692b
+    var faceColors = new Array(6);
+    faceColors[0] = new BABYLON.Color4(1,1,1,1);
+    faceColors[1] = new BABYLON.Color4(1,1,1,1);
+    faceColors[2] = new BABYLON.Color4(1,1,1,1);
+    faceColors[3] = new BABYLON.Color4(1,1,1,1);
+    faceColors[4] = new BABYLON.Color4(1,1,1,1);
+    faceColors[5] = new BABYLON.Color4(1,1,1,1);
+
+    // オブジェクト宣言（立方体）
+    const box = BABYLON.MeshBuilder.CreateBox("box", {
+        faceColors: faceColors,
+    });
+
+    // オブジェクトの回転
+    // 参考：https://forum.babylonjs.com/t/cylinder-mesh-rotation/16562
+    //box.rotation = new BABYLON.Vector3(3.14,0,0);
+    // ↑このRotateはアニメーションではない
+
+    // アニメーション
+    // 参考：https://doc.babylonjs.com/start/chap3/animation
+    {
+        const anim = new BABYLON.Animation("wheelAnimation", 
+                                            "rotation.y", 
+                                            10, 
+                                            BABYLON.Animation.ANIMATIONTYPE_FLOAT, 
+                                            BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+        const animKeys = []; 
+
+        //At the animation key 0, the value of rotation.y is 0
+        animKeys.push({
+            frame: 0,
+            value: 0
+        });
+
+        //At the animation key 30, (after 1 sec since animation fps = 30) the value of rotation.y is 2PI for a complete rotation
+        animKeys.push({
+            frame: 30,
+            value: 2 * Math.PI
+        });
+
+        //set the keys
+        anim.setKeys(animKeys);
+
+        //Link this animation to the right back wheel
+        box.animations = [];
+        box.animations.push(anim);
+
+        //Begin animation - object to animate, first frame, last frame and loop if true
+        scene.beginAnimation(box, 0, 30, true);
+    }
+    
+
+    return scene;
+}
+
+// こう書くと、描画されるっぽい
+// 参考：https://scenepick.com/scripts/scene.js
+// 元シーン：https://scenepick.com/pages/scene.html
+var scene = createScene(); 
+    engine.runRenderLoop(function () {
+    scene.render();
+});
+
+</script>
+</html>
