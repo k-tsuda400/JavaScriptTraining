@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!-- ひな形参考：https://developers.google.com/youtube/iframe_api_reference -->
+<html>
+  <body>
+    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+    <div id="Myplayer"></div>
+
+    <script>
+      // 2. This code loads the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      // youtube動画IDを詰め込んだ配列作成
+      var movieList = [];
+      let idx = 0;
+      // まずは決め打ちでIDを格納
+      // 動画元：https://www.youtube.com/watch?v=uOszvjxcq2w&list=PLRAiojg7W3xkgtKDen2D21fEoqb22MRZw&index=1&ab_channel=%E5%A4%A7%E5%A1%9A%E8%A3%BD%E8%96%AC%E5%85%AC%E5%BC%8F%E3%83%81%E3%83%A3%E3%83%B3%E3%83%8D%E3%83%AB
+      movieList.push('9sn7vJ5kl_k', '6mfFVx5YN60', 'U9ws3mmIUIQ');
+
+      // 3. This function creates an <iframe> (and YouTube player)
+      //    after the API code downloads.
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('Myplayer', {
+          height: '360',
+          width: '640',
+          videoId: movieList[ idx ],
+          playerVars: { 'autoplay': 1, 'controls': 0 },
+            events: {
+                'onReady': function(evt) {
+                evt.target.mute();
+                evt.target.playVideo();
+                
+                // debug
+                //console.log(movieList);
+                //console.log(movieList[idx]);
+                
+                // onReadyで再生時にunmute()にしてしまうと、自動再生が効かなくなってしまう
+                //evt.target.unMute();
+                },
+                'onStateChange': function(evt) {
+                switch (evt.data) {
+                    case YT.PlayerState.PLAYING:
+                        // ここでunMuteしても自動再生効かなくなる
+                        break;
+                    case YT.PlayerState.ENDED:
+                        if (idx > movieList.length){
+                            idx = 0;
+                        } else {
+                            idx = idx + 1;
+                        }
+                        // debug
+                        //console.log(idx);
+
+                        // 次の動画IDをセット
+                        // 参考：
+                        // https://stackoverflow.com/questions/13180540/how-to-dynamically-change-youtube-player-videoid
+                        player.loadVideoById(movieList[idx]);
+                        evt.target.playVideo();
+                        break;
+                }
+                }
+            },
+            playerVars: {
+                playsinline: 1,
+            }
+          });
+      }
+    </script>
+  </body>
+</html>
