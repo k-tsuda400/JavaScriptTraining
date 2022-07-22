@@ -1,0 +1,101 @@
+<html>
+  <title>画像ルーレット　デモ</title>
+    <body>
+      <button name="stop" onClick="setStop()">ストップ</button><br>
+      <button name="reset" onClick="setReset()">もう一度回す</button><br>
+        <img id="mypic" width="512" height="512" border="1">
+        <br><input id="file-sample" type="file" multiple>
+        <img id="file-preview" border="1">
+      <script>
+        // https://www.sejuku.net/blog/63834
+        // https://webbibouroku.com/Blog/Article/js-file-preview
+
+        // ルーレットが回る速さ
+        const LOOP_SPEED = 200;
+        // ボタンを押し、止まるまでの猶予時間
+        const STOPPING_TIME = 1000;
+        // ボタンを押したときの、ルーレットが回る速さ（遅いバージョン）初速
+        const STOPPING_LOOP_SPEED_FIRST = 600;
+
+        var pics_src = new Array();
+        let file_length = 0;
+        document.getElementById('file-sample').addEventListener('change', function (e) {
+            // ファイルの長さを保持
+            file_length = e.target.files.length;
+            for( var i=0, l=file_length ; l>i; i++ ) {
+              var file = e.target.files[i];
+
+              // ファイルのブラウザ上でのURLを取得する
+              var blobUrl = window.URL.createObjectURL(file);
+              pics_src.push(blobUrl)
+            }
+            // var file = e.target.files[0];
+
+            // // ファイルのブラウザ上でのURLを取得する
+            // var blobUrl = window.URL.createObjectURL(file);
+
+            // img要素に表示
+            // var img = document.getElementById('file-preview');
+            // img.src = blobUrl;
+
+            // 画像が読み込み終わったら、ルーレットスタート
+            slideshow_timer();
+        });
+
+      // var pics_src = new Array("https://k-tsuda400.github.io/images/20211002/toon.png",
+      // "https://k-tsuda400.github.io/images/20211002/toonFix.png",
+      // "https://k-tsuda400.github.io/images/20211002/toonFix2.png");
+      console.log(pics_src);
+      var num = -1;
+      var slideShowStride = LOOP_SPEED;
+      let isStoppingSlow = false;
+      let stopCounter = 0;
+      let isStop = false;
+      
+
+      function slideshow_timer(){
+        if (isStop) {
+          // 何もしない
+          return;
+        }
+          if (num == file_length - 1){
+              num = 0;
+          } 
+          else {
+              num ++;
+          }
+          document.getElementById("mypic").src=pics_src[num];
+          setTimeout("slideshow_timer()",slideShowStride); 
+
+          if (isStoppingSlow) {
+            setTimeout("stopCheckCounter()",slideShowStride);
+          }
+      }
+
+      function stopCheckCounter() {
+        stopCounter = stopCounter + 1;
+        slideShowStride = STOPPING_LOOP_SPEED_FIRST + (stopCounter / 2)
+        if (stopCounter < STOPPING_TIME) {
+          setTimeout("stopCheckCounter()", 1); 
+        } else {
+          isStop = true;
+        }
+      }
+
+      function setStop(){
+        slideShowStride = STOPPING_LOOP_SPEED_FIRST;
+        isStoppingSlow = true;
+      }
+
+      function setReset() {
+        // 変数の初期化
+        isStop = false;
+        slideShowStride = LOOP_SPEED;
+        stopCounter = 0;
+        isStoppingSlow = false;
+        // もう一度ルーレット処理を呼び出す
+        slideshow_timer();
+      }
+      </script>
+    </body>
+</html>
